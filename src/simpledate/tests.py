@@ -332,9 +332,9 @@ class BestGuessUtcTest(TestCase):
         assert result == target, result
 
     def test_various(self):
-        # self.assert_utc('1/6/2013 UTC', dt.datetime(2013, 1, 6))
-        # self.assert_utc('1/6/2013 EST', dt.datetime(2013, 1, 6, 5))
-        # self.assert_utc('1/6/2013 BST', dt.datetime(2013, 5, 31, 23))
+        self.assert_utc('1/6/2013 UTC', dt.datetime(2013, 1, 6))
+        self.assert_utc('1/6/2013 EST', dt.datetime(2013, 1, 6, 5))
+        self.assert_utc('1/6/2013 BST', dt.datetime(2013, 5, 31, 23))
         self.assert_utc('Tue, 18 Jun 2013 12:19:09 -0400', dt.datetime(2013, 6, 18, 16, 19, 9))
 
 class DocsTest(TestCase):

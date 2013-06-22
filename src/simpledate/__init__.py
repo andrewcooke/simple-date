@@ -93,7 +93,6 @@ def tzinfo_tzname(tzinfo, datetime, is_dst):
         return name
 
 
-
 def tzinfo_utcoffset(tzinfo, datetime):
     '''
     Get the UTC offset for the timezone at this time, avoiding an error when

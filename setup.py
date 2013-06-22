@@ -8,7 +8,7 @@ setup(
     install_requires = ['pytz', 'tzlocal'],
     packages = ['simpledate'],
     package_dir = {'': 'src'},
-    version = '0.1.1',
+    version = '0.1.2',
     description = 'Simple dates (and times, and timezones).',
     author = 'Andrew Cooke',
     author_email = 'andrew@acooke.org',
