@@ -156,6 +156,11 @@ def seq_to_re(to_convert, directive):
     return '%s)' % regex
 
 
+WEEK_NUMBER = lambda x: r'(?P<%s>5[0-3]|[0-4]\d|\d)' % x
+WORD = lambda x: r'(?P<%s>(?:\w(?<=[^\d_]))+)' % x
+SYMBOL = r'[^\w]+'
+
+
 BASE_SUBSTITUTIONS = {
     ' ': '\s+',
     '%a': seq_to_re(LOCALE_TIME.a_weekday, 'a'),
@@ -171,9 +176,9 @@ BASE_SUBSTITUTIONS = {
     '%p': seq_to_re(LOCALE_TIME.am_pm, 'p'),
     '%M': r'(?P<M>[0-5]\d|\d)',
     '%S': r'(?P<S>6[0-1]|[0-5]\d|\d)',
-    '%U': r'(?P<U>5[0-3]|[0-4]\d|\d)',
+    '%U': WEEK_NUMBER('U'),
     '%w': r'(?P<w>[0-6])',
-    '%W': r'(?P<W>5[0-3]|[0-4]\d|\d)',
+    '%W': WEEK_NUMBER('W'),
     '%y': r'(?P<y>\d\d)',
     '%Y': r'(?P<Y>\d\d\d\d)',
     '%z': r'(?P<z>[+-]\d\d[0-5]\d)',
@@ -191,10 +196,15 @@ PYTHON_SUBSTITUTIONS.update({
 DEFAULT_SUBSTITUTIONS = dict(PYTHON_SUBSTITUTIONS)
 DEFAULT_SUBSTITUTIONS.update({
     ' !': r'[^\w]+',
-    '%a!': r'(?P<a>\w(?<=[^\d_]))',
-    '%A!': r'(?P<A>\w(?<=[^\d_]))',
-    '%b!': r'(?P<b>\w(?<=[^\d_]))',
-    '%B!': r'(?P<B>\w(?<=[^\d_]))',
+    ':!': r'[^\w]+',
+    '.!': r'[^\w]+',
+    ',!': r'[^\w]+',
+    '-!': r'[^\w]+',
+    '/!': r'[^\w]+',
+    '%a!': WORD('a'),
+    '%A!': WORD('A'),
+    '%b!': WORD('b'),
+    '%B!': WORD('B'),
     '%Z!': r'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,})',
 })
 
@@ -209,12 +219,9 @@ def to_regexp(fmt, substitutions=None):
         return _CACHED_REGEXP(fmt, substitutions)
 
 
-def int_or_default(dict_value, default):
-    return default if dict_value is None else int(dict_value)
-
-
 
 def to_time_tuple(found_dict):
+    '''Closely based on _strptime in standard Python.'''
     year = None
     month = day = 1
     hour = minute = second = fraction = 0
@@ -225,14 +232,14 @@ def to_time_tuple(found_dict):
     week_of_year_start = -1
     # weekday and julian defaulted to -1 so as to signal need to calculate
     weekday = julian = -1
-    for group_key in found_dict.keys():
+    for group_key in (key for key in found_dict.keys() if found_dict[key] is not None):
         # Directives not explicitly handled below:
         #   c, x, X
         #      handled by making out of other directives
         #   U, W
         #      worthless without day of the week
         if group_key == 'y':
-            year = int_or_default(found_dict['y'], year)
+            year = int(found_dict['y'])
             # Open Group specification for strptime() states that a %y
             #value in the range of [00, 68] is in the century 2000, while
             #[69,99] is in the century 1900
@@ -241,19 +248,19 @@ def to_time_tuple(found_dict):
             else:
                 year += 1900
         elif group_key == 'Y':
-            year = int_or_default(found_dict['Y'], year)
+            year = int(found_dict['Y'])
         elif group_key == 'm':
-            month = int_or_default(found_dict['m'], month)
+            month = int(found_dict['m'])
         elif group_key == 'B':
             month = LOCALE_TIME.f_month.index(found_dict['B'].lower())
         elif group_key == 'b':
             month = LOCALE_TIME.a_month.index(found_dict['b'].lower())
         elif group_key == 'd':
-            day = int_or_default(found_dict['d'], day)
+            day = int(found_dict['d'])
         elif group_key == 'H':
-            hour = int_or_default(found_dict['H'], hour)
+            hour = int(found_dict['H'])
         elif group_key == 'I':
-            hour = int_or_default(found_dict['I'], hour)
+            hour = int(found_dict['I'])
             ampm = found_dict.get('p', '').lower()
             # If there was no AM/PM indicator, we'll treat this like AM
             if ampm in ('', LOCALE_TIME.am_pm[0]):
@@ -269,9 +276,9 @@ def to_time_tuple(found_dict):
                 if hour != 12:
                     hour += 12
         elif group_key == 'M':
-            minute = int_or_default(found_dict['M'], minute)
+            minute = int(found_dict['M'])
         elif group_key == 'S':
-            second = int_or_default(found_dict['S'], second)
+            second = int(found_dict['S'])
         elif group_key == 'f':
             s = found_dict['f']
             # Pad to always return microseconds.
@@ -282,15 +289,15 @@ def to_time_tuple(found_dict):
         elif group_key == 'a':
             weekday = LOCALE_TIME.a_weekday.index(found_dict['a'].lower())
         elif group_key == 'w':
-            weekday = int_or_default(found_dict['w'], weekday)
+            weekday = int(found_dict['w'])
             if weekday == 0:
                 weekday = 6
             else:
                 weekday -= 1
         elif group_key == 'j':
-            julian = int_or_default(found_dict['j'], julian)
+            julian = int(found_dict['j'])
         elif group_key in ('U', 'W'):
-            week_of_year = int_or_default(found_dict[group_key], week_of_year)
+            week_of_year = int(found_dict[group_key])
             if group_key == 'U':
                 # U starts week on Sunday.
                 week_of_year_start = 6
@@ -363,7 +370,10 @@ def to_time_tuple(found_dict):
 
 
 def strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
-    '''Closely based on _strptime in standard Python.'''
+    '''
+    Parse the input and return date/time tuple, fractional seconds, and
+    a format that matched the input.
+    '''
 
     for index, arg in enumerate([data_string, format]):
         if not isinstance(arg, str):
