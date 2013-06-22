@@ -125,9 +125,9 @@ class ParserTest(TestCase):
             assert date.month == month, date.month
 
     def test_regexp(self):
-        date = SimpleDate('2013-01-01PST', format='%Y-%m-%d%Z')
-        assert str(date) == '2013-01-01PST', str(date)
-        date = SimpleDate('2013-01-01PST', format=r'%Y-%m-%d\s*%Z')
+        # date = SimpleDate('2013-01-01PST', format='%Y-%m-%d%Z')
+        # assert str(date) == '2013-01-01PST', str(date)
+        date = SimpleDate('2013-01-01PST', format=r'%Y-%m-%d ?%Z')
         assert str(date) == '2013-01-01PST', str(date)
 
 
@@ -365,3 +365,15 @@ class MRUSortedIterableTest(TestCase):
         next(iter(iterable))  # force sort
         assert iterable._data == [4,2,1,3], iterable._data
 
+
+
+
+class StackOverflowTest(TestCase):
+
+    def test_17248250(self):
+        t = SimpleDate('56', format='{{%H:}?%M:}?%S').time
+        assert t == dt.time(0, 0, 56), t
+        t = SimpleDate('34:56', format='{{%H:}?%M:}?%S').time
+        assert t == dt.time(0, 34, 56), t
+        t = SimpleDate('12:34:56', format='{{%H:}?%M:}?%S').time
+        assert t == dt.time(12, 34, 56), t
