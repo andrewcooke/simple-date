@@ -314,15 +314,15 @@ as the
 
 For parsing, it has been extended to:
 
-* Grouping and alternatives with `{...|...|...}`.  For example `{%Z|%z}`
+* Grouping and alternatives with `{...|...|...}`.  For example `'{%Z|%z}'`
   would match either timezone name or a numeric offset.
 
-* Optional values with `?`.  For example `%H ?%M` is hours and minutes
+* Optional values with `?`.  For example `'%H ?%M'` is hours and minutes
   with an optional space between.
 
 * Several of the directives can be modified to be more lenient by adding
-  a trailing `!`.  For examples: ` !` will match any non-word character,
-  including spaces; `%Z!` will match a wide variety of timezone names (the
+  a trailing `!`.  For examples: `' !'` will match any non-word character,
+  including spaces; `'%Z!'` will match a wide variety of timezone names (the
   default is to match only those know to the current locale).
 
 When passed to the SimpleDate constructor, the format is used both to parse
