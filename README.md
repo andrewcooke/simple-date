@@ -308,10 +308,22 @@ but it also has two advantages:
 
 ### Format - format
 
-The format used to parse and display strings.  This is the same as the
-[standard Python format](http://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior)
-(except that `%Z` has been modified to accept a wider variety of timezone
-names).
+The format used to parse and display strings.  For display, this is the same
+as the
+[standard Python format](http://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior).
+
+For parsing, it has been extended to:
+
+* Grouping and alternatives with `{...|...|...}`.  For example `{%Z|%z}`
+  would match either timezone name or a numeric offset.
+
+* Optional values with `?`.  For example `%H ?%M` is hours and minutes
+  with an optional space between.
+
+* Several of the directives can be modified to be more lenient by adding
+  a trailing `!`.  For examples: ` !` will match any non-word character,
+  including spaces; `%Z!` will match a wide variety of timezone names (the
+  default is to match only those know to the current locale).
 
 When passed to the SimpleDate constructor, the format is used both to parse
 dates and to format them:
@@ -321,6 +333,11 @@ dates and to format them:
    >>> str(birthday)
    19 May 2013
    ```
+
+When an extended format is used for parsing Simple Date uses the matched
+data to select a format for printing.  So if `{%H:}?%M` matched both
+hours and minutes then the format would be `%H:%M`, but if it matched only
+minutes then the format for printing would be `%M`.
 
 Whether a format is supplied or not, the formats in [SimpleDateParser] (by
 default, `DEFAULT_DATE_PARSER`) can also be used to parse the string, if
@@ -338,7 +355,7 @@ parsing - important because American and European date styles conflict.
 For example, to parse American style (month/day/year):
 
 ```python
->>> american = SimpleDateParser(MONTH_FIRST + DEFAULT_FORMATS)
+>>> american = SimpleDateParser(MDY + DEFAULT_FORMATS)
 >>> SimpleDate('12/24/2013', date_parser=american)
 SimpleDate('12/24/2013', tz='America/Santiago')
 ```
@@ -553,11 +570,11 @@ The constructor takes a list of formats, which will be tried until one works
 (the order is not guaranteed - more successful formats are tried first).
 
 Predefined lists include `RFC_2822` (aliased as `EMAIL`), `ISO_8601`,
-`ISO_8601_T`, `MONTH_FIRST` and `DAY_FIRST`.
+`MDY` and `DMY`.
 
-`MONTH_FIRST` and `DAY_FIRST` are mutually exclusive - only use one at a time.
+`MDY` and `DMY` are mutually exclusive - only use one at a time.
 
-The default is `DEFAULT_FORMATS = ISO_8601 + ISO_8601_T + RFC_2822`
+The default is `DEFAULT_FORMATS = ISO_8601 + RFC_2822`
 
 #### Parsing
 
@@ -713,7 +730,7 @@ By default neither American nor European formats are included (they conflict)
 so if you want to parse European style dates:
 
 ```python
->>> european = SimpleDateParser(DAY_FIRST + DEFAULT_FORMATS)
+>>> european = SimpleDateParser(DMY + DEFAULT_FORMATS)
 >>> SimpleDate('24/12/2013', date_parser=european)
 SimpleDate('24/12/2013', tz='America/Santiago')
 ```
