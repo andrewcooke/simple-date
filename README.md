@@ -335,9 +335,9 @@ dates and to format them:
    ```
 
 When an extended format is used for parsing Simple Date uses the matched
-data to select a format for printing.  So if `{%H:}?%M` matched both
-hours and minutes then the format would be `%H:%M`, but if it matched only
-minutes then the format for printing would be `%M`.
+data to select a format for printing.  So if `'{%H:}?%M'` matched both
+hours and minutes then the format would be `'%H:%M'`, but if it matched only
+minutes then the format for printing would be `'%M'`.
 
 Whether a format is supplied or not, the formats in [SimpleDateParser] (by
 default, `DEFAULT_DATE_PARSER`) can also be used to parse the string, if
