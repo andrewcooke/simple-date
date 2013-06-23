@@ -593,12 +593,19 @@ to use a different set of formats from the default.
 The constructor takes a list of formats, which will be tried until one works
 (the order is not guaranteed - more successful formats are tried first).
 
-Predefined lists include `RFC_2822` (aliased as `EMAIL`), `ISO_8601`,
-`MDY` and `DMY`.
+Predefined lists include `RFC_2822` (aliased as `EMAIL`), `ISO_8601`
+(aliased as `YMD`), `MDY` and `DMY`.
 
 `MDY` and `DMY` are mutually exclusive - only use one at a time.
 
 The default is `DEFAULT_FORMATS = ISO_8601 + RFC_2822`
+
+Note that SimpleDateParser is not a *validating* parser.  By design, these
+formats will match *many* dates that are inconsistent with the associated
+specifications.  If you want to check for an exact match with a format,
+create a SimpleDateParser with a single, explicit format.  And even then, a
+space in the format may match multiple spaces in the input string (this is
+also true when using the standard Python parser).
 
 #### Parsing
 
