@@ -13,7 +13,6 @@ from re import sub, escape, compile, IGNORECASE
 
 # extend the usual date parsing with:
 # - optional matching by adding a trailing ?
-# - space used to be \s+ to space? is \s*
 # - nestable grouping and alternatives as {A|B|C}
 #   use {} rather than () as less likely to appear in real text
 # - modify matchers for textual day, month, timezone that match any string
