@@ -111,6 +111,7 @@ Documentation
      * [Attributes](#attributes)
      * [Operators](#operators)
      * [Conversion](#conversion)
+     * [Replacement](#replacement)
   * [SimpleDateParser](#simpledateparser)
      * [Constructor](#constructor-1)
      * [Parsing](#parsing)
@@ -334,7 +335,7 @@ dates and to format them:
    19 May 2013
    ```
 
-When an extended format is used for parsing Simple Date uses the matched
+When an extended format is used for parsing, Simple Date uses the matched
 data to select a format for printing.  So if `'{%H:}?%M'` matched both
 hours and minutes then the format would be `'%H:%M'`, but if it matched only
 minutes then the format for printing would be `'%M'`.
@@ -548,6 +549,30 @@ So, for example, to change format:
 ```
 
 For conversion to other types, see [attributes](#attributes).
+
+#### Replacement
+
+Similar to `datetime.replace()`, SimpleDate has a `.replace(...)` method that
+generates a *new* time (unlike `.convert(...)`, which is the same time in
+a different timezone or format).
+
+This combines the usual datetime arguments (year, month, day, hour, minute,
+second, microsecond) with the standard SimpleDate parameters that control
+timezone resolution etc
+([tz](#timezone---tz),
+[is_dst](#daylight-saving-time---is_dst),
+[country](#country-code---country),
+[tz_factory](#tz-factory---tz_factory),
+[unsafe](#first-found---unsafe),
+[format](#format---format),
+[debug](#debugging---debug)).
+
+For example, to move to the start of the day:
+
+```python
+>>> SimpleDate().replace(hour=0, minute=0, second=0, microsecond=0)
+SimpleDate('2013-06-22 00:00:00.000000 CLT', tz='America/Santiago')
+```
 
 ### SimpleDateParser
 

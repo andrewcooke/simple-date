@@ -377,3 +377,11 @@ class StackOverflowTest(TestCase):
         assert t == dt.time(0, 34, 56), t
         t = SimpleDate('12:34:56', format='{{%H:}?%M:}?%S').time
         assert t == dt.time(12, 34, 56), t
+
+    def test_12165691(self):
+        now_utc = SimpleDate('2013-01-02 12:34:56', tz='UTC')
+        now_tz = now_utc.convert(tz='CST6CDT')
+        begin_day = now_tz.replace(hour=0, minute=0, second=0, microsecond=0)
+        assert now_utc.timestamp == 1357130096, now_utc.timestamp
+        assert now_tz.timestamp == 1357130096, now_tz.timestamp
+        assert begin_day.timestamp == 1357106400, begin_day.timestamp

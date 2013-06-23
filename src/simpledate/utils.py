@@ -163,3 +163,7 @@ class OrderedSet(MutableSet):
                         break
                     intersection.add(item)
         return intersection
+
+
+def set_kargs_only(**kargs):
+    return dict((key, value) for (key, value) in kargs.items() if value is not None)

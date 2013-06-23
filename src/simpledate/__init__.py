@@ -7,7 +7,7 @@ from threading import local
 from tzlocal import get_localzone
 from pytz import timezone, country_timezones, all_timezones, FixedOffset, utc, NonExistentTimeError, common_timezones
 from simpledate.fmt import strptime, reconstruct
-from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet
+from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_only
 
 
 # A wrapper around the datetime, pytz and tzlocal packages.
@@ -1187,6 +1187,16 @@ class SimpleDate(DateTimeWrapper, DebugLog):
             tz = tz_factory.search(*zones, datetime=self.datetime, is_dst=is_dst, country=country, unsafe=unsafe, debug=debug)
         if format is None: format = self.format
         return SimpleDate(datetime=tz.normalize(self.datetime.astimezone(tz)), format=format)
+
+    def replace(self, year=None, month=None, day=None, hour=None, minute=None, second=None, microsecond=None,
+                tz=None, format=None, is_dst=False, country=None, tz_factory=DEFAULT_TZ_FACTORY, unsafe=False, debug=False):
+        datetime = self.datetime.replace(**set_kargs_only(year=year, month=month, day=day, hour=hour, minute=minute, second=second, microsecond=microsecond))
+        if tz is None:
+            return SimpleDate(datetime, format=self.format if format is None else format)
+        else:
+            tzinfo = tz_factory.search(tz, datetime=datetime.replace(tzinfo=None), is_dst=is_dst, country=country, unsafe=unsafe, debug=debug)
+            return SimpleDate(datetime, tz=tzinfo, format=self.format if format is None else format)
+
 
     @property
     def utc(self):
