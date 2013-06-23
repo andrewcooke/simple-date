@@ -580,9 +580,8 @@ Often you need to parse dates without knowing, ahead of time, the exact date
 format.  One approach is to try write code that is "smart enough" to parse
 many formats.  That approach is taken by
 [python-dateutil](http://labix.org/python-dateutil) (I believe).  An
-alternative, which may be slower (but see below), but also more reliable,
-is to try different formats in turn.  This latter approach is taken by
-SimpleDateParser.
+alternative, which may be slower, but also more reliable, is to try different
+formats in turn.  This latter approach is taken by SimpleDateParser.
 
 Note that the SimpleDate [constructor](#constructor) calls SimpleDateParser
 automatically (either `DEFAULT_DATE_PARSER`, or the instance supplied as
