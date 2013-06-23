@@ -1,7 +1,7 @@
 
 from unittest import TestCase
 from re import compile
-from simpledate.fmt import _to_regexp, reconstruct
+from simpledate.fmt import _to_regexp, reconstruct, DEFAULT_SUBSTITUTIONS
 
 
 class RegexpTest(TestCase):
@@ -42,6 +42,7 @@ class ParserTest(TestCase):
         self.assert_regexp('abXc', 'ab%xc', {'%x': 'X'})
         self.assert_regexp('ab((?P<G1>)X)c', 'ab{%x}c', {'%x': 'X'})
         self.assert_regexp('a((?P<G1>)b)?c', 'ab?c', {})
+        self.assert_regexp('((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)', '{%H:!}%M', DEFAULT_SUBSTITUTIONS)
 
     def test_subs(self):
         self.assert_regexp(r'(?P<Y>\d\d\d\d)-(?P<m>1[0-2]|0[1-9]|[1-9])-(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])', '%Y-%m-%d', None)
@@ -59,6 +60,7 @@ class ParserTest(TestCase):
         self.assert_parser('ab((?P<G1>)xy|(?P<G2>)z)c', {'G0': 'ab%G1%%G2%c', 'G1': 'xy', 'G2': 'z'}, 'ab{xy|z}c', {})
         self.assert_parser('ab((?P<G1>)c)?', {'G0': 'ab%G1%', 'G1': 'c'}, 'abc?', {})
         self.assert_parser('ab((?P<G1>)((?P<G2>)c)?|(?P<G3>)de((?P<G4>)X)?)', {'G0': 'ab%G1%%G3%', 'G1': '%G2%', 'G2': 'c', 'G3': 'de%G4%', 'G4': '%x'}, 'ab{c?|de%x?}', {'%x': 'X'})
+        self.assert_parser('((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)', {'G1': '%H:', 'G0': '%G1%%M'}, '{%H:!}%M', DEFAULT_SUBSTITUTIONS)
 
     def assert_reconstruct(self, target, expr, text):
         pattern, rebuild, regexp = _to_regexp(expr)

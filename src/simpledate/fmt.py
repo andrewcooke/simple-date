@@ -27,6 +27,13 @@ from re import sub, escape, compile, IGNORECASE
 
 
 def tokenizer(fmt):
+    '''
+    Split a format into a series of tokens.  For example,
+      {%H:!}?%M
+    will become
+      {, %H, :!, }, ?, %M
+    '''
+
     i = 0
     n = len(fmt)
 
@@ -48,7 +55,11 @@ def tokenizer(fmt):
         optional = j + 1 < n and fmt[j+1] == '?'
         if optional and fmt[i] != '}':
             yield '{'
+
+        # the token itself
         yield fmt[i:j+1]
+
+        # additional tokens to handle optional values as above
         if optional and fmt[i] != '}':
             yield '}'
         if optional:
@@ -59,6 +70,23 @@ def tokenizer(fmt):
 
 
 def _to_regexp(fmt, substitutions=None):
+    '''
+    Given a format, construct the equivalent regexp (and compile it) and
+    the information needed to reconstruct a matching template after use.
+
+    The reconstruction works by embedding empty matches in the regexp that
+    record which parts of the expression were matched.  For example, a
+    template like
+      {%H:!}?%M
+    is translated to
+      ((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)
+    where the (?P<G1>) defines a group, named G1, that is defined only if
+    hours are matched.  The reconstruction dictionary looks like:
+      {'G0': '%G1%%M', 'G1': '%H:'}
+    and reconstruction starts with G0.  If G1 was matched, then %G1% is
+    substituted with the given reconstruction (and we repeat); if it was
+    not matched then %G1% is simply dropped.
+    '''
 
     if substitutions is None:
         substitutions = DEFAULT_SUBSTITUTIONS
@@ -126,6 +154,10 @@ def _to_regexp(fmt, substitutions=None):
 TAG = compile(r'(?:^|[^%])%(G\d+)%')
 
 def reconstruct(rebuild, found_dict):
+    '''
+    Implement the reconstruction described above, using the rebuild dictionary
+    and the group informatrion from a particular match.
+    '''
     fmt = rebuild['G0']
     while True:
         match = TAG.search(fmt)
@@ -160,6 +192,8 @@ WORD = lambda x: r'(?P<%s>(?:\w(?<=[^\d_]))+)' % x
 SYMBOL = r'[^\w]+'
 
 
+# these are the definitions used in the standard Python implementation
+
 BASE_SUBSTITUTIONS = {
     ' ': '\s+',
     '%a': seq_to_re(LOCALE_TIME.a_weekday, 'a'),
@@ -192,6 +226,9 @@ PYTHON_SUBSTITUTIONS.update({
     '%X': _to_regexp(LOCALE_TIME.LC_time, BASE_SUBSTITUTIONS)[0],
 })
 
+
+# extra definitions allowing more flexible matching.
+
 DEFAULT_SUBSTITUTIONS = dict(PYTHON_SUBSTITUTIONS)
 DEFAULT_SUBSTITUTIONS.update({
     ' !': r'[^\w]+',
@@ -209,6 +246,8 @@ DEFAULT_SUBSTITUTIONS.update({
 
 
 
+# thread-safe caching
+
 CACHE_MAX_SIZE = 100
 _CACHE_LOCK = _thread_allocate_lock()
 _CACHED_REGEXP = lru_cache(maxsize=CACHE_MAX_SIZE)(_to_regexp)
@@ -218,6 +257,9 @@ def to_regexp(fmt, substitutions=None):
         return _CACHED_REGEXP(fmt, substitutions)
 
 
+# the main logic to construct a date/time from the matched data, lifted
+# verbatim from the python source.  the only change is to check that
+# a group has actually matched (since now some may be optional).
 
 def to_time_tuple(found_dict):
     '''Closely based on _strptime in standard Python.'''
