@@ -1,5 +1,5 @@
-from functools import lru_cache
 
+from functools import lru_cache
 try:
     from _thread import allocate_lock as _thread_allocate_lock
 except ImportError:
