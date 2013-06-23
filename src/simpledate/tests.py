@@ -1,7 +1,7 @@
 
 from unittest import TestCase
 from pytz import timezone, utc
-from simpledate import SimpleDate, SimpleDateError, SimpleDateParser, DMY, MRUSortedIterable, DEFAULT_FORMAT, DEFAULT_DATE_PARSER, DEFAULT_TZ_FACTORY, take, NoTimezone, AmbiguousTimezone, SingleInstantTz, prefer, tzinfo_utcoffset, best_guess_utc
+from simpledate import SimpleDate, SimpleDateError, SimpleDateParser, DMY, MRUSortedIterable, DEFAULT_FORMAT, DEFAULT_DATE_PARSER, DEFAULT_TZ_FACTORY, take, NoTimezone, AmbiguousTimezone, SingleInstantTz, prefer, tzinfo_utcoffset, best_guess_utc, MDY
 import datetime as dt
 import time as t
 
@@ -35,8 +35,8 @@ class ConstructorTest(TestCase):
 
     def test_literal(self):
         self.assert_constructor('2013-06-08 00:00:00 CLT', '2013-06-08 00:00:00 CLT')
-        # self.assert_constructor('2013-06', '2013-06', format='%Y-%m')
-        # self.assert_constructor('2013-01-01 00:00:00.000000 CLST', '2013', format=DEFAULT_FORMAT)
+        self.assert_constructor('2013-06', '2013-06', format='%Y-%m')
+        self.assert_constructor('2013-01-01 00:00:00.000000 CLST', '2013', format=DEFAULT_FORMAT)
 
     def test_now(self):
         date = SimpleDate(debug=DEBUG)
@@ -96,6 +96,10 @@ class ConstructorTest(TestCase):
         assert str(clt) =='2012-04-28 23:30:00.000000 CLT'
         clst = SimpleDate('2012-04-28 23:30', tz='America/Santiago', is_dst=True, country='CL', format=DEFAULT_FORMAT, debug=DEBUG)
         assert str(clst) =='2012-04-28 23:30:00.000000 CLST'
+
+    def test_formats(self):
+        self.assert_constructor('23/06/2013 11:49', '23-6-2013 11:49', format=DMY)
+        self.assert_constructor('06/23/2013 11:49', '6-23-2013 11:49', format=MDY)
 
 
 class ParserTest(TestCase):

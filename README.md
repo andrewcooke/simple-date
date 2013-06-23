@@ -73,16 +73,16 @@ AmbiguousTimezone: 3 distinct timezones found: <'EST'>; <'Australia/NSW'>; ...
 Whoa!  What are those crazy Australians doing?  Let's force the USA (only):
 
 ```python
->>> SimpleDate(1234567890, tz='EST', country='US')
-SimpleDate('2009-02-13 18:31:30.000000 EST')
+>>> SimpleDate(1234567890, tz='EST', country='US', format=MDY)
+SimpleDate('02/13/2009 18:31:30.000000 EST')
 ```
 
 Alternatively, we could give priority to the USA and take the first solution
 we find:
 
 ```python
->>> SimpleDate(1234567890, tz='EST', country=prefer('US'), unsafe=True)
-SimpleDate('2009-02-13 18:31:30.000000 EST')
+>>> SimpleDate(1234567890, tz='EST', country=prefer('US'), unsafe=True, format=MDY)
+SimpleDate('02/13/2009 18:31:30.000000 EST')
 ```
 
 And what day is that?
@@ -188,7 +188,7 @@ in the examples below, so the results show "now" when I was writing these docs):
     SimpleDate('2013-06-17 23:50:59.141497 UTC', tz='UTC')
     ```
 
-* and if you give a tuple, either value might be used.
+* and if you give a tuple, any value might be used.
 
     ```python
     >>> SimpleDate(tz=('CLT', 'CLST'))
@@ -345,7 +345,15 @@ default, `DEFAULT_DATE_PARSER`) can also be used to parse the string, if
 necessary.  And if no format is supplied then the format in the parser that
 succeeds is used for formatting output too.
 
-See the next section for specifying multiple formats.
+Multiple formats can be given as a tuple.  If more than one format is given
+then the format that successfully parses the value will be used for display
+(unlike the single value case, which is always used, even if another format
+from `date_parser` is used).
+
+   ```python
+   >>> SimpleDate('6/12/2013', format=DMY + YMD)
+   SimpleDate('06/12/2013', tz='America/Santiago')
+   ```
 
 ### Date Parser - date_parser
 

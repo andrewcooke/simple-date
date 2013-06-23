@@ -1,7 +1,8 @@
 
 from unittest import TestCase
 from re import compile
-from simpledate.fmt import _to_regexp, reconstruct, DEFAULT_SUBSTITUTIONS
+from simpledate import DMY
+from simpledate.fmt import _to_regexp, reconstruct, DEFAULT_SUBSTITUTIONS, strip
 
 
 class RegexpTest(TestCase):
@@ -75,3 +76,10 @@ class ParserTest(TestCase):
         self.assert_reconstruct('%S', '{{%H:}?%M:}?%S', '56')
         self.assert_reconstruct('ab', 'a ?b', 'ab')
         self.assert_reconstruct('a b', 'a ?b', 'a b')
+
+
+class StripTest(TestCase):
+
+    def test_strip(self):
+        s = strip(DMY[0])
+        assert s == '%d/%m/%Y %H:%M:%S.%f %Z', s

@@ -167,3 +167,24 @@ class OrderedSet(MutableSet):
 
 def set_kargs_only(**kargs):
     return dict((key, value) for (key, value) in kargs.items() if value is not None)
+
+
+def always_tuple(value, none=()):
+    '''
+    Some arguments can be a single value, or a sequence (tuple or list).
+    This function normalizes the input to always be a sequence.
+
+    :param value: The value that, if non-sequence, should be converted to a
+                  sequence
+    :param none: Value returned when input is None
+    :return: The value as a sequence.
+    '''
+    if value is None:
+        return none
+    # elif isinstance(value, Iterable) and not isinstance(value, str):
+    elif hasattr(value, '__iter__') and not isinstance(value, str):
+        return tuple(value)
+    else:
+        return (value,)
+
+

@@ -1,5 +1,6 @@
 
 from functools import lru_cache
+from simpledate.utils import always_tuple
 try:
     from _thread import allocate_lock as _thread_allocate_lock
 except ImportError:
@@ -434,3 +435,38 @@ def strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
     write_format = reconstruct(rebuild, found.groupdict())
 
     return date_time, fraction, write_format
+
+
+def _strip(fmt):
+    '''
+    Remove extensions from  a format, taking the first choice and including
+    optional parts.
+    '''
+    choice = [0]
+    for tok in tokenizer(fmt):
+        if len(tok) > 1 or tok == ' ':
+            if not any(choice):
+                if tok.endswith('!'):
+                    tok = tok[:-1]
+                yield tok
+        elif tok == '{':
+            choice.append(0)
+        elif tok == '|':
+            choice[-1] += 1
+        elif tok == '}':
+            choice.pop()
+        elif tok == '?':
+            pass
+        else:
+            yield tok
+
+
+def strip(fmt):
+    '''
+    Remove extensions from  a format, taking the first choice and including
+    optional parts.
+    '''
+    if not '{' in fmt and not '!' in fmt:
+        return fmt
+    else:
+        return ''.join(_strip(fmt))

@@ -6,8 +6,8 @@ from collections import MutableSet, OrderedDict
 from threading import local
 from tzlocal import get_localzone
 from pytz import timezone, country_timezones, all_timezones, FixedOffset, utc, NonExistentTimeError, common_timezones
-from simpledate.fmt import strptime, reconstruct
-from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_only
+from simpledate.fmt import strptime, reconstruct, strip
+from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_only, always_tuple
 
 
 # A wrapper around the datetime, pytz and tzlocal packages.
@@ -136,25 +136,6 @@ def datetime_timestamp(datetime):
 
 
 # Utilities to help with argument handling and the like.
-
-
-def always_tuple(value, convert_None=True):
-    '''
-    Some arguments can be a single value, or a sequence (tuple or list).
-    This function normalizes the input to always be a sequence.
-
-    :param value: The value that, if non-sequence, should be converted to a
-                  sequence.
-    :param convert_None: Whether `None` should be converted too.
-    :return: The value as a sequence.
-    '''
-    if not convert_None and value is None:
-        return value
-    # elif isinstance(value, Iterable) and not isinstance(value, str):
-    elif hasattr(value, '__iter__') and not isinstance(value, str):
-        return tuple(value)
-    else:
-        return (value,)
 
 
 def always_datetime(value):
@@ -482,8 +463,8 @@ class PyTzFactory(DebugLog):
 
         # repeatedly expand/filter.
         for tz in timezones:
-            known=None if known is None else OrderedSet(known)
-            known = self.expand_tz(*always_tuple(tz), known=known, datetime=datetime, is_dst=is_dst, debug=debug)
+            known = None if known is None else OrderedSet(known)
+            known = self.expand_tz(*always_tuple(tz, none=(None,)), known=known, datetime=datetime, is_dst=is_dst, debug=debug)
 
         # if we never filtered anything, we have everything.
         if known is None:
@@ -890,6 +871,20 @@ class DateTimeWrapper:
         else: return NotImplemented
 
 
+def single_format(format):
+    '''
+    The SimpleDate constructor supports both a single format and a list.  If
+    we have multiple values then we don't use it to set the write format.
+    This function embodies that logic - it returns a format only if a unique
+    value was given.
+    '''
+    format = always_tuple(format)
+    if len(format) == 1:
+        return format[0]
+    else:
+        return None
+
+
 class SimpleDate(DateTimeWrapper, DebugLog):
     '''
     A formatted date and time, associated with a timezone.
@@ -1022,13 +1017,13 @@ class SimpleDate(DateTimeWrapper, DebugLog):
                 if date_parser is None:
                     if format:
                         log('Creating date parser with given format plus defaults')
-                        date_parser = SimpleDateParser((format,) + DEFAULT_FORMATS)
+                        date_parser = SimpleDateParser(always_tuple(format) + DEFAULT_FORMATS)
                     else:
                         log('Using default date parser')
                         date_parser = DEFAULT_DATE_PARSER
                 else:
                     log('Using given date parser')
-                simple = date_parser.parse(year_or_auto, tz=tz, is_dst=is_dst, country=country, format=format, tz_factory=tz_factory, unsafe=unsafe, debug=debug)
+                simple = date_parser.parse(year_or_auto, tz=tz, is_dst=is_dst, country=country, format=single_format(format), tz_factory=tz_factory, unsafe=unsafe, debug=debug)
                 year_or_auto, format, tz = None, None, None  # clear tz so it's not re-checked later
             elif year_or_auto is not None:
                 raise SimpleDateError('Cannot convert {0!r} for year_or_auto', year_or_auto)
@@ -1080,7 +1075,7 @@ class SimpleDate(DateTimeWrapper, DebugLog):
             if simple is not None:
                 datetime = simple.datetime
                 log('Using datetime from simple: {0}', datetime)
-                if format is None:
+                if not format:
                     format = simple.format
                     log('Using format from simple: {0}', format)
                 simple = None
@@ -1170,11 +1165,11 @@ class SimpleDate(DateTimeWrapper, DebugLog):
             tzinfo = tz_factory.search(tz, datetime=datetime, is_dst=is_dst, country=country, unsafe=unsafe, debug=debug)
             datetime = tzinfo_localize(tzinfo, datetime, is_dst)
 
-        if format is None:
+        format = single_format(format)
+        if not format:
             log('Using default format ({0})', DEFAULT_FORMAT)
             format = DEFAULT_FORMAT
-
-        super().__init__(datetime, format)
+        super().__init__(datetime, strip(format))
 
         log('Created {0}', self)
 
