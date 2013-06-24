@@ -1,7 +1,7 @@
 
 from unittest import TestCase
 from pytz import timezone, utc
-from simpledate import SimpleDate, SimpleDateError, SimpleDateParser, DMY, MRUSortedIterable, DEFAULT_FORMAT, DEFAULT_DATE_PARSER, DEFAULT_TZ_FACTORY, take, NoTimezone, AmbiguousTimezone, SingleInstantTz, prefer, tzinfo_utcoffset, best_guess_utc, MDY
+from simpledate import SimpleDate, SimpleDateError, SimpleDateParser, DMY, MRUSortedIterable, DEFAULT_FORMAT, DEFAULT_DATE_PARSER, DEFAULT_TZ_FACTORY, take, NoTimezone, AmbiguousTimezone, SingleInstantTz, prefer, tzinfo_utcoffset, best_guess_utc, MDY, invert
 import datetime as dt
 import time as t
 
@@ -129,10 +129,16 @@ class ParserTest(TestCase):
             assert date.month == month, date.month
 
     def test_regexp(self):
-        # date = SimpleDate('2013-01-01PST', format='%Y-%m-%d%Z')
-        # assert str(date) == '2013-01-01PST', str(date)
-        date = SimpleDate('2013-01-01PST', format=r'%Y-%m-%d ?%Z')
+        date = SimpleDate('2013-01-01PST', format='%Y-%m-%d%Z')
         assert str(date) == '2013-01-01PST', str(date)
+        date = SimpleDate('2013-01-01PST', format=r'%Y-%m-%d %?%Z')
+        assert str(date) == '2013-01-01PST', str(date)
+        date = SimpleDate('%59!{|}', format='%%%M!{|}', debug=DEBUG)
+        assert date.format == '%%%M!{|}', date.format
+        assert str(date) == '%59!{|}', str(date)
+        date = SimpleDate('%59!(|)', format='%%%M!(|)', debug=DEBUG)
+        assert date.format == '%%%M!(|)', date.format
+        assert str(date) == '%59!(|)', str(date)
 
 
 class TZFactoryTest(TestCase):
@@ -341,6 +347,7 @@ class BestGuessUtcTest(TestCase):
         self.assert_utc('1/6/2013 BST', dt.datetime(2013, 5, 31, 23))
         self.assert_utc('Tue, 18 Jun 2013 12:19:09 -0400', dt.datetime(2013, 6, 18, 16, 19, 9))
 
+
 class DocsTest(TestCase):
 
     def test_old_inline(self):
@@ -370,16 +377,14 @@ class MRUSortedIterableTest(TestCase):
         assert iterable._data == [4,2,1,3], iterable._data
 
 
-
-
 class StackOverflowTest(TestCase):
 
     def test_17248250(self):
-        t = SimpleDate('56', format='{{%H:}?%M:}?%S').time
+        t = SimpleDate('56', format='%(%(%H:%)%?%M:%)%?%S').time
         assert t == dt.time(0, 0, 56), t
-        t = SimpleDate('34:56', format='{{%H:}?%M:}?%S').time
+        t = SimpleDate('34:56', format=invert('((H:)?M:)?S')).time
         assert t == dt.time(0, 34, 56), t
-        t = SimpleDate('12:34:56', format='{{%H:}?%M:}?%S').time
+        t = SimpleDate('12:34:56', format=invert('((H:)?M:)?S')).time
         assert t == dt.time(12, 34, 56), t
 
     def test_12165691(self):

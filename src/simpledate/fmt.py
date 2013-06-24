@@ -1,6 +1,5 @@
 
 from functools import lru_cache
-from simpledate.utils import always_tuple
 try:
     from _thread import allocate_lock as _thread_allocate_lock
 except ImportError:
@@ -13,64 +12,70 @@ from re import sub, escape, compile, IGNORECASE
 
 
 # extend the usual date parsing with:
-# - optional matching by adding a trailing ?
-# - nestable grouping and alternatives as {A|B|C}
-#   use {} rather than () as less likely to appear in real text
-# - modify matchers for textual day, month, timezone that match any string
-#   by adding a trailing !
-# - similarly, %z! allows ":" between H and M
+# - optional matching by adding a trailing %?
+# - more catholic matching with a leading %!
+# - nestable grouping and alternatives as %(A%|B%|C%)
 # - generation of the "equivalent format" for display after parsing
 # escaping is by prefixing with %.
 
 # so the following are similar:
-# ISO_8601 = add_timezone('%Y-%m-%d %H:%M:%S.%f', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d', '%Y')
-# %Y{-%m{-%d{{ |T}%H:%M{:%S{.%f}?}?}}?}? !{%Z!|%z!}?
+#   ISO_8601 = add_timezone('%Y-%m-%d %H:%M:%S.%f', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d', '%Y')
+#   %Y%(-%m%(-%d%(%( %|T%)%H:%M%(:%S%(.%f%)%)%?%)%?%)%?%)%? %(%!Z%|%z%)
+
+# that's almost unreadable, so we also need some tools to generate that from
+# something more readable.  for example, auto-escaping from
+#   Y(-m(-d(( |T)H:M(:S(.f)?)?)?)?)? (!Z|z)
 
 
 def tokenizer(fmt):
     '''
-    Split a format into a series of tokens.  For example,
-      {%H:!}?%M
+    Split a format into a series of tokens adding parens for optional values.
+
+    For example,
+      '%(%H:%)%?%M %!Z%?'
     will become
-      {, %H, :!, }, ?, %M
+      '%(', '%H', ':', '%)', '%?', '%M', ' ', '%(', '%!Z', '%)', '%?'
     '''
 
     i = 0
     n = len(fmt)
 
     while i < n:
-        j = i
+        j = i + 1
 
         # if we have a symbol, include that
         if fmt[i] == '%':
             j += 1
-            if j == n:
+            if j > n:
                 raise ValueError('Missing token (nothing follows %)')
 
-        # include a trailing !
-        if j + 1 < n and fmt[j+1] == '!':
-            j += 1
+            # include a ! prefix
+            if fmt[j-1] == '!':
+                j += 1
+                if j > n:
+                    raise ValueError('Missing token (nothing follows %!)')
 
         # if we have a trailing ? then enclose anything not in parens so
         # that we generate the regexp marker to test for inclusion
-        optional = j + 1 < n and fmt[j+1] == '?'
-        if optional and fmt[i] != '}':
-            yield '{'
+        optional = j + 1 < n and fmt[j:j+2] == '%?'
+        single = fmt[i:j] != '%)'
+        if optional and single:
+            yield '%('
 
         # the token itself
-        yield fmt[i:j+1]
+        yield fmt[i:j]
 
         # additional tokens to handle optional values as above
-        if optional and fmt[i] != '}':
-            yield '}'
         if optional:
-            yield '?'
-            j += 1
+            if single:
+                yield '%)'
+            yield '%?'
+            j += 2
 
-        i = j + 1
+        i = j
 
 
-def _to_regexp(fmt, substitutions=None):
+def _to_regexp(fmt, to_regex=None, to_write=None):
     '''
     Given a format, construct the equivalent regexp (and compile it) and
     the information needed to reconstruct a matching template after use.
@@ -78,7 +83,7 @@ def _to_regexp(fmt, substitutions=None):
     The reconstruction works by embedding empty matches in the regexp that
     record which parts of the expression were matched.  For example, a
     template like
-      {%H:!}?%M
+      %(%H:%)%?%M
     is translated to
       ((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)
     where the (?P<G1>) defines a group, named G1, that is defined only if
@@ -89,12 +94,12 @@ def _to_regexp(fmt, substitutions=None):
     not matched then %G1% is simply dropped.
     '''
 
-    if substitutions is None:
-        substitutions = DEFAULT_SUBSTITUTIONS
+    if to_regex is None: to_regex = DEFAULT_TO_REGEX
+    if to_write is None: to_write = DEFAULT_TO_WRITE
 
     # escape things that are related to regexps
-    fmt = sub(r"([\\.^$*+\(\)\[\]])", r"\\\1", fmt)
-    fmt = sub('\s+', ' ', fmt)
+    fmt = sub(r'([\^$*+?\(\){}\[\]|])(?<!%.)', r'\\\1', fmt)
+    fmt = sub(r'([\.])(?<!%!.)', r'\\\1', fmt)
 
     # we build a set of templates that can be used to construct the pattern
     # that would match the data.  we do this by tracking whether each group
@@ -106,50 +111,40 @@ def _to_regexp(fmt, substitutions=None):
     stack = [0]  # nested groups
     rebuild = defaultdict(lambda: '')  # group substitutions
 
-    regexp = ''
+    regex = ''
     tokens = tokenizer(fmt)
 
-    def append(read, write=None):
-        nonlocal regexp
-        regexp += read
+    def append(token, write=None):
+        nonlocal regex
+        regex += to_regex.get(token, token)
         if write is None:
-            write = read
-        if write.endswith('!'):
-            write = write[:-1]
-        rebuild['G%d' % stack[-1]] += write
+            write = token
+        rebuild['G%d' % stack[-1]] += to_write.get(write, write)
 
     try:
         while True:
-            tok = next(tokens)
-            if len(tok) > 1 or tok == ' ':
-                if tok in substitutions:
-                    append(substitutions[tok], tok)
-                else:
-                    raise ValueError('Unknown symbol: %s' % tok)
-            elif tok == '{':
+            token = next(tokens)
+            append(token)
+            if token == '%(':
                 count += 1
                 append('((?P<G%d>)' % count, '%%G%d%%' % count)
                 stack.append(count)
-            elif tok == '|':
+            elif token == '%|':
                 if not stack.pop():
-                    raise ValueError('Unexpected | (must be within {...})')
+                    raise ValueError('Unexpected %| - must be within %(...%)')
                 count += 1
                 append('|(?P<G%d>)' % count, '%%G%d%%' % count)
                 stack.append(count)
-            elif tok == '}':
-                append(')', '')
+            elif token == '%)':
                 if not stack.pop():
-                    raise ValueError('Unbalanced }')
-            elif tok == '?':
-                append('?', '')
-            else:
-                append(tok)
+                    raise ValueError('Unbalanced %)')
+                append(')', '')
     except StopIteration:
         pass
     if stack != [0]:
-        raise ValueError('Unbalanced {')
+        raise ValueError('Unbalanced %(')
 
-    return regexp, rebuild, compile(regexp, IGNORECASE)
+    return regex, rebuild, compile(regex, IGNORECASE)
 
 
 TAG = compile(r'(?:^|[^%])%(G\d+)%')
@@ -157,7 +152,7 @@ TAG = compile(r'(?:^|[^%])%(G\d+)%')
 def reconstruct(rebuild, found_dict):
     '''
     Implement the reconstruction described above, using the rebuild dictionary
-    and the group informatrion from a particular match.
+    and the group information from a particular match.
     '''
     fmt = rebuild['G0']
     while True:
@@ -195,7 +190,7 @@ SYMBOL = r'[^\w]+'
 
 # these are the definitions used in the standard Python implementation
 
-BASE_SUBSTITUTIONS = {
+BASE_TO_REGEX = {
     ' ': '\s+',
     '%a': seq_to_re(LOCALE_TIME.a_weekday, 'a'),
     '%A': seq_to_re(LOCALE_TIME.f_weekday, 'A'),
@@ -220,31 +215,54 @@ BASE_SUBSTITUTIONS = {
     '%%': '%',
 }
 
-PYTHON_SUBSTITUTIONS = dict(BASE_SUBSTITUTIONS)
-PYTHON_SUBSTITUTIONS.update({
-    '%c': _to_regexp(LOCALE_TIME.LC_date_time, BASE_SUBSTITUTIONS)[0],
-    '%x': _to_regexp(LOCALE_TIME.LC_date, BASE_SUBSTITUTIONS)[0],
-    '%X': _to_regexp(LOCALE_TIME.LC_time, BASE_SUBSTITUTIONS)[0],
+PYTHON_TO_REGEX= dict(BASE_TO_REGEX)
+PYTHON_TO_REGEX.update({
+    '%c': _to_regexp(LOCALE_TIME.LC_date_time, BASE_TO_REGEX, {})[0],
+    '%x': _to_regexp(LOCALE_TIME.LC_date, BASE_TO_REGEX, {})[0],
+    '%X': _to_regexp(LOCALE_TIME.LC_time, BASE_TO_REGEX, {})[0],
 })
 
 
 # extra definitions allowing more flexible matching.
 
-DEFAULT_SUBSTITUTIONS = dict(PYTHON_SUBSTITUTIONS)
-DEFAULT_SUBSTITUTIONS.update({
-    ' !': r'[^\w]+',
-    ':!': r'[^\w]+',
-    '.!': r'[^\w]+',
-    ',!': r'[^\w]+',
-    '-!': r'[^\w]+',
-    '/!': r'[^\w]+',
-    '%a!': WORD('a'),
-    '%A!': WORD('A'),
-    '%b!': WORD('b'),
-    '%B!': WORD('B'),
-    '%Z!': r'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,})',
-})
+FLEXIBLE_REGEX = {
+    '%! ': r'[^\w]+',
+    '%!:': r'[^\w]+',
+    '%!.': r'[^\w]+',
+    '%!,': r'[^\w]+',
+    '%!-': r'[^\w]+',
+    '%!/': r'[^\w]+',
+    '%!!': '!',
+    '%!a': WORD('a'),
+    '%!A': WORD('A'),
+    '%!b': WORD('b'),
+    '%!B': WORD('B'),
+    '%!Z': r'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,})',
+    '%?': '?',
+}
 
+HIDE_CHOICES = {
+    '%(': '',
+    '%|': '',
+    '%)': '',
+}
+
+DEFAULT_TO_REGEX = dict(PYTHON_TO_REGEX)
+DEFAULT_TO_REGEX.update(FLEXIBLE_REGEX)
+DEFAULT_TO_REGEX.update(HIDE_CHOICES)
+
+
+def auto_convert(key):
+    symbol = key[0] + key[-1]
+    if symbol in PYTHON_TO_REGEX:
+        return key, symbol
+    elif len(key) < 3:
+        return key, ''
+    else:
+        return key, key[-1]
+
+DEFAULT_TO_WRITE = dict(map(auto_convert, FLEXIBLE_REGEX.keys()))
+DEFAULT_TO_WRITE.update(HIDE_CHOICES)
 
 
 # thread-safe caching
@@ -437,36 +455,70 @@ def strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
     return date_time, fraction, write_format
 
 
-def _strip(fmt):
-    '''
-    Remove extensions from  a format, taking the first choice and including
-    optional parts.
-    '''
-    choice = [0]
-    for tok in tokenizer(fmt):
-        if len(tok) > 1 or tok == ' ':
-            if not any(choice):
-                if tok.endswith('!'):
-                    tok = tok[:-1]
-                yield tok
-        elif tok == '{':
-            choice.append(0)
-        elif tok == '|':
-            choice[-1] += 1
-        elif tok == '}':
-            choice.pop()
-        elif tok == '?':
-            pass
+# def _strip(fmt):
+#     '''
+#     Remove extensions from  a format, taking the first choice and including
+#     optional parts.
+#     '''
+#     choice = []
+#     for tok in tokenizer(fmt):
+#         if len(tok) > 1 or tok == ' ':
+#             if not any(choice):
+#                 if tok.endswith('!') and tok not in ESCAPES_TO_WRITE:
+#                     tok = tok[:-1]
+#                 yield ESCAPES_TO_WRITE.get(tok, tok)
+#         elif tok == '{':
+#             choice.append(0)
+#         elif tok == '|':
+#             choice[-1] += 1
+#         elif tok == '}':
+#             choice.pop()
+#         elif tok == '?':
+#             pass
+#         else:
+#             yield tok
+#
+#
+# def strip(fmt):
+#     '''
+#     Remove extensions from  a format, taking the first choice and including
+#     optional parts.
+#     '''
+#     if not '{' in fmt and not '!' in fmt:
+#         return fmt
+#     else:
+#         return ''.join(_strip(fmt))
+
+def strip(fmt): pass
+
+
+def _invert(fmt, to_regex=DEFAULT_TO_REGEX):
+    i = 0
+    n = len(fmt)
+    while i < n:
+        j = i + 1
+        if fmt[i] == '%':
+            j += 1
+            if j > n:
+                raise ValueError('Missing token (nothing follows %)')
+            yield fmt[i+1]
+        elif fmt[i] == '!':
+            j += 1
+            if j > n:
+                raise ValueError('Missing token (nothing follows !)')
+            yield '%' + fmt[i:j]
+        elif fmt[i] in '(|)?':
+            yield '%' + fmt[i]
+        elif '%' + fmt[i] in to_regex:
+            yield '%' + fmt[i]
         else:
-            yield tok
+            yield fmt[i]
+        i = j
 
 
-def strip(fmt):
-    '''
-    Remove extensions from  a format, taking the first choice and including
-    optional parts.
-    '''
-    if not '{' in fmt and not '!' in fmt:
-        return fmt
+def invert(fmt, to_regex=DEFAULT_TO_REGEX):
+    if isinstance(fmt, str):
+        return ''.join(_invert(fmt, to_regex))
     else:
-        return ''.join(_strip(fmt))
+        return tuple(invert(f, to_regex) for f in fmt)
+

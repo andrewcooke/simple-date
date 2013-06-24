@@ -6,7 +6,7 @@ from collections import MutableSet, OrderedDict
 from threading import local
 from tzlocal import get_localzone
 from pytz import timezone, country_timezones, all_timezones, FixedOffset, utc, NonExistentTimeError, common_timezones
-from simpledate.fmt import strptime, reconstruct, strip
+from simpledate.fmt import strptime, reconstruct, strip, invert
 from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_only, always_tuple
 
 
@@ -19,10 +19,10 @@ from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_
 
 # Build the various formats used by SimpleDateParser.
 
-RFC_2822 = EMAIL = ('{%a!,! ?}?%d !%b !%Y !%H:!%M{:!%S}?{ !%Z!| !?%z}?',)
-ISO_8601 = YMD = ('%Y{-!?%m{-!?%d{{ !|T}%H:!?%M{:!?%S{.%f}?}?}?}?}?{ !%Z!| !?%z}?',)
-MDY = ('{%m/!%d/!}?%Y{ !%H:!%M{:!%S{.%f}?}?}?{ !%Z!| !?%z}?',)
-DMY = ('{%d/!%m/!}?%Y{ !%H:!%M{:!%S{.%f}?}?}?{ !%Z!| !?%z}?',)
+RFC_2822 = EMAIL = (invert('(!a!, ?)d! ?b! ?Y! H:M(:S)?(! !Z|! ?z)?'),)
+ISO_8601 = YMD = (invert('Y(!-?m(!-?d((! |T)H!:M(!:S(.f)?)?)?)?)?(! !Z|! ?z)?'),)
+MDY = (invert('(m!/d!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?'),)
+DMY = (invert('(d!/m!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?'),)
 
 DEFAULT_FORMAT = '%Y-%m-%d %H:%M:%S.%f %Z'
 DEFAULT_FORMATS = ISO_8601 + RFC_2822
@@ -671,7 +671,7 @@ class SimpleDateParser(DebugLog):
     '''
 
     def __init__(self, formats=DEFAULT_FORMATS):
-        if isinstance(formats, str): formats = [formats]  # allow single string arg
+        formats = always_tuple(formats)
         self._formats = MRUSortedIterable(formats)
 
     def parse(self, date,
@@ -1169,7 +1169,7 @@ class SimpleDate(DateTimeWrapper, DebugLog):
         if not format:
             log('Using default format ({0})', DEFAULT_FORMAT)
             format = DEFAULT_FORMAT
-        super().__init__(datetime, strip(format))
+        super().__init__(datetime, format)
 
         log('Created {0}', self)
 
@@ -1237,3 +1237,10 @@ def best_guess_utc(date, debug=False):
     return date.utc.datetime
 
 
+# TODO
+# - change date parser to return date and original format, and use the format
+#   to check whether a format should be set
+# - add test of example with set format that is extended and needs to be
+#   stripped
+# - add automatic conversin of inverted format
+# - update docs and stackexchange answers

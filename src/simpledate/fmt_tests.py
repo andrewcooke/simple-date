@@ -2,7 +2,7 @@
 from unittest import TestCase
 from re import compile
 from simpledate import DMY
-from simpledate.fmt import _to_regexp, reconstruct, DEFAULT_SUBSTITUTIONS, strip
+from simpledate.fmt import _to_regexp, reconstruct, DEFAULT_TO_REGEX, strip, invert, HIDE_CHOICES
 
 
 class RegexpTest(TestCase):
@@ -56,12 +56,12 @@ class ParserTest(TestCase):
 
     def test_parser(self):
         self.assert_parser('abc', {'G0': 'abc'}, 'abc', {})
-        self.assert_parser('abC', {'G0': 'abc'}, 'abc!', {'c!': 'C'})
-        self.assert_parser('ab((?P<G1>)xyz)c', {'G0': 'ab%G1%c', 'G1': 'xyz'}, 'ab{xyz}c', {})
-        self.assert_parser('ab((?P<G1>)xy|(?P<G2>)z)c', {'G0': 'ab%G1%%G2%c', 'G1': 'xy', 'G2': 'z'}, 'ab{xy|z}c', {})
-        self.assert_parser('ab((?P<G1>)c)?', {'G0': 'ab%G1%', 'G1': 'c'}, 'abc?', {})
-        self.assert_parser('ab((?P<G1>)((?P<G2>)c)?|(?P<G3>)de((?P<G4>)X)?)', {'G0': 'ab%G1%%G3%', 'G1': '%G2%', 'G2': 'c', 'G3': 'de%G4%', 'G4': '%x'}, 'ab{c?|de%x?}', {'%x': 'X'})
-        self.assert_parser('((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)', {'G1': '%H:', 'G0': '%G1%%M'}, '{%H:!}%M', DEFAULT_SUBSTITUTIONS)
+        self.assert_parser('aBc', {'G0': 'a%bc'}, 'a%!bc', {'%!b': 'B'})
+        self.assert_parser('ab((?P<G1>)xyz)c', {'G0': 'ab%G1%c', 'G1': 'xyz'}, 'ab%(xyz%)c', HIDE_CHOICES)
+        self.assert_parser('ab((?P<G1>)xy|(?P<G2>)z)c', {'G0': 'ab%G1%%G2%c', 'G1': 'xy', 'G2': 'z'}, 'ab%(xy%|z%)c', HIDE_CHOICES)
+        self.assert_parser('ab((?P<G1>)c)?', {'G0': 'ab%G1%', 'G1': 'c'}, 'abc%?', DEFAULT_TO_REGEX)
+        self.assert_parser('ab((?P<G1>)((?P<G2>)c)?|(?P<G3>)de((?P<G4>)(?P<H>2[0-3]|[0-1]\d|\d))?)', {'G0': 'ab%G1%%G3%', 'G1': '%G2%', 'G2': 'c', 'G3': 'de%G4%', 'G4': '%H'}, 'ab%(c%?%|de%H%?%)', DEFAULT_TO_REGEX)
+        self.assert_parser('((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)', {'G1': '%H:', 'G0': '%G1%%M'}, '%(%H%!:%)%M', DEFAULT_TO_REGEX)
 
     def assert_reconstruct(self, target, expr, text):
         pattern, rebuild, regexp = _to_regexp(expr)
@@ -76,6 +76,7 @@ class ParserTest(TestCase):
         self.assert_reconstruct('%S', '{{%H:}?%M:}?%S', '56')
         self.assert_reconstruct('ab', 'a ?b', 'ab')
         self.assert_reconstruct('a b', 'a ?b', 'a b')
+        self.assert_reconstruct('%%%M!{|}', '%%%M%!%{%|%}', '%59!{|}')
 
 
 class StripTest(TestCase):
@@ -83,3 +84,28 @@ class StripTest(TestCase):
     def test_strip(self):
         s = strip(DMY[0])
         assert s == '%d/%m/%Y %H:%M:%S.%f %Z', s
+        s = strip(' ! !?')
+        assert s == '  '
+        s = strip('%%%M!{|}')
+        assert s == '%%%M!{|}', s
+        s = strip('%{%|%}%!%%')
+        assert s == '{|}!%%', s
+
+
+class InvertTest(TestCase):
+
+    def test_invert(self):
+        i = invert('a')
+        assert i == '%a', i
+        i = invert('!a')
+        assert i == '%!a', i
+        i = invert('a?')
+        assert i == '%a%?', i
+        i = invert('(a|!b)?:')
+        assert i == '%(%a%|%!b%)%?:', i
+        i = invert('(a|!b)?!:')
+        assert i == '%(%a%|%!b%)%?%!:', i
+        i = invert('%a')
+        assert i == 'a', i
+        i = invert('%!')
+        assert i == '!', i
