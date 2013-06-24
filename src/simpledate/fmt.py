@@ -536,7 +536,7 @@ def invert(fmt, to_regex=DEFAULT_TO_REGEX):
 
 
 def auto_invert(fmt, log=None):
-    if '%' in fmt:
+    if fmt is None or '%' in fmt:
         return fmt
     else:
         inverted = invert(fmt)
