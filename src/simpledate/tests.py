@@ -123,7 +123,8 @@ class ParserTest(TestCase):
         self.assert_parse('Sun, 02 Jun 2013 13:26:58 -0300', SimpleDateParser('%a, %d %b %Y %H:%M:%S %z'))
 
     def assert_parse(self, s, parser=DEFAULT_DATE_PARSER, month=None):
-        date = parser.parse(s, debug=DEBUG)
+        dt, _, fmt = parser.parse(s, debug=DEBUG)
+        date = SimpleDate(dt, format=fmt)
         assert s == str(date), str(date)
         if month is not None:
             assert date.month == month, date.month

@@ -84,12 +84,12 @@ class StripTest(TestCase):
     def test_strip(self):
         s = strip(DMY[0])
         assert s == '%d/%m/%Y %H:%M:%S.%f %Z', s
-        s = strip(' ! !?')
+        s = strip('%! %! %?')
         assert s == '  '
         s = strip('%%%M!{|}')
         assert s == '%%%M!{|}', s
-        s = strip('%{%|%}%!%%')
-        assert s == '{|}!%%', s
+        s = strip('(|)!%%')
+        assert s == '(|)!%%', s
 
 
 class InvertTest(TestCase):

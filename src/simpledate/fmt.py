@@ -458,41 +458,42 @@ def strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
     return date_time, fraction, write_format
 
 
-# def _strip(fmt):
-#     '''
-#     Remove extensions from  a format, taking the first choice and including
-#     optional parts.
-#     '''
-#     choice = []
-#     for tok in tokenizer(fmt):
-#         if len(tok) > 1 or tok == ' ':
-#             if not any(choice):
-#                 if tok.endswith('!') and tok not in ESCAPES_TO_WRITE:
-#                     tok = tok[:-1]
-#                 yield ESCAPES_TO_WRITE.get(tok, tok)
-#         elif tok == '{':
-#             choice.append(0)
-#         elif tok == '|':
-#             choice[-1] += 1
-#         elif tok == '}':
-#             choice.pop()
-#         elif tok == '?':
-#             pass
-#         else:
-#             yield tok
-#
-#
-# def strip(fmt):
-#     '''
-#     Remove extensions from  a format, taking the first choice and including
-#     optional parts.
-#     '''
-#     if not '{' in fmt and not '!' in fmt:
-#         return fmt
-#     else:
-#         return ''.join(_strip(fmt))
+def _strip(fmt, to_write=DEFAULT_TO_WRITE):
+    '''
+    Remove extensions from  a format, taking the first choice and including
+    optional parts.
+    '''
+    choice = []
+    for tok in tokenizer(fmt):
+        if tok == '%(':
+            choice.append(0)
+        elif tok == '%|':
+            if not choice:
+                raise ValueError('%| outside %(...%)')
+            choice[-1] += 1
+        elif tok == '%)':
+            try:
+                choice.pop()
+            except IndexError:
+                raise ValueError('Unmatched %)')
+        elif tok == '%?':
+            pass
+        else:
+            if not any(choice):
+                yield to_write.get(tok, tok)
+    if choice:
+        raise ValueError('Unmatched %(')
 
-def strip(fmt): pass
+
+def strip(fmt):
+    '''
+    Remove extensions from  a format, taking the first choice and including
+    optional parts.
+    '''
+    if not '{' in fmt and not '!' in fmt:
+        return fmt
+    else:
+        return ''.join(_strip(fmt))
 
 
 def _invert(fmt, to_regex=DEFAULT_TO_REGEX):
@@ -520,8 +521,26 @@ def _invert(fmt, to_regex=DEFAULT_TO_REGEX):
 
 
 def invert(fmt, to_regex=DEFAULT_TO_REGEX):
+    '''
+    Replace each character c by %c, if %c appears in `to_regex`.  The !
+    character is considered as a prefix, so !x becomes %!x if it appears in
+    `to_regex`.  The % character is an escape, so %y becomes y.
+
+    This effectively "inverts" a template, meaning that a template that
+    would have been written as `T%(%H%!:%)%M` can be written as `%T(H!:)M`.
+    '''
     if isinstance(fmt, str):
         return ''.join(_invert(fmt, to_regex))
     else:
         return tuple(invert(f, to_regex) for f in fmt)
+
+
+def auto_invert(fmt, log=None):
+    if '%' in fmt:
+        return fmt
+    else:
+        inverted = invert(fmt)
+        if log:
+            log('Inverted {0!r} to {1!r}', fmt, inverted)
+        return inverted
 

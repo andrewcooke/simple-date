@@ -315,28 +315,48 @@ as the
 
 For parsing, it has been extended to:
 
-* Grouping and alternatives with `{...|...|...}`.  For example `'{%Z|%z}'`
-  would match either timezone name or a numeric offset.
+* Grouping and alternatives with `%(...%|...%|...%)`.  For example
+  `'%(%Z%|%z%)'` would match either timezone name or a numeric offset.
 
-* Optional values with `?`.  For example `'%H ?%M'` is hours and minutes
+* Optional values with `%?`.  For example `'%H %?%M'` is hours and minutes
   with an optional space between.
 
 * Several of the directives can be modified to be more lenient by adding
-  a trailing `!`.  For examples: `' !'` will match any non-word character,
-  including spaces; `'%Z!'` will match a wide variety of timezone names (the
-  default is to match only those know to the current locale).
+  a `!` after the `%`.  For example `'%!Z'` will match a wide variety of
+  timezone names (the default is to match only those know to the current
+  locale).
+
+* Since the changes above result in an unreadable soup of `%` signs, the
+  `invert(...)` function will add `%` to templates where missing, and remove
+  where present.  Sounds crazy, but simplifies things hugely.  Here's an
+  ISO8601-like format with a letter "T" in the middle and optional seconds:
+
+  ```python
+  >>> SimpleDate('2013-06-24T17:47', format=invert('Y-m-d%TH:M(:S)?'), tz=utc)
+  SimpleDate('2013-06-24T17:47', tz='UTC')
+  ```
+
+  (incidentally, that format inverts to `'%Y-%m-%dT%H:%M%(:%S%)%?'`).
+
+* To make life even simpler, when the format contains *no* `%` signs then
+  `invert(...)` is automatically applied:
+
+  ```python
+  >>> SimpleDate('2013-06-27 17:47', format='Y-m-d H:M(:S)?', tz=utc)
+  SimpleDate('2013-06-24 17:47', tz='UTC')
+  ```
 
 When passed to the SimpleDate constructor, the format is used both to parse
 dates and to format them:
 
    ```python
-   >>> birthday = SimpleDate('19 May 2013', format='%a %b %Y')
+   >>> birthday = SimpleDate('19 May 2013', format='d b Y')
    >>> str(birthday)
    19 May 2013
    ```
 
 When an extended format is used for parsing, Simple Date uses the matched
-data to select a format for printing.  So if `'{%H:}?%M'` matched both
+data to select a format for printing.  So if `'%(%H:%)?%M'` matched both
 hours and minutes then the format would be `'%H:%M'`, but if it matched only
 minutes then the format for printing would be `'%M'`.
 

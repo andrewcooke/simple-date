@@ -6,7 +6,7 @@ from collections import MutableSet, OrderedDict
 from threading import local
 from tzlocal import get_localzone
 from pytz import timezone, country_timezones, all_timezones, FixedOffset, utc, NonExistentTimeError, common_timezones
-from simpledate.fmt import strptime, reconstruct, strip, invert
+from simpledate.fmt import strptime, reconstruct, strip, invert, auto_invert
 from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_only, always_tuple
 
 
@@ -20,7 +20,7 @@ from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_
 # Build the various formats used by SimpleDateParser.
 
 RFC_2822 = EMAIL = (invert('(!a!, ?)d! ?b! ?Y! H:M(:S)?(! !Z|! ?z)?'),)
-ISO_8601 = YMD = (invert('Y(!-?m(!-?d((! |T)H!:M(!:S(.f)?)?)?)?)?(! !Z|! ?z)?'),)
+ISO_8601 = YMD = (invert('Y(!-?m(!-?d((! |%T)H!:M(!:S(.f)?)?)?)?)?(! !Z|! ?z)?'),)
 MDY = (invert('(m!/d!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?'),)
 DMY = (invert('(d!/m!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?'),)
 
@@ -676,14 +676,13 @@ class SimpleDateParser(DebugLog):
 
     def parse(self, date,
               tz=None, is_dst=False, country=None, tz_factory=DEFAULT_TZ_FACTORY,
-              format=None, unsafe=False, debug=False):
+              unsafe=False, debug=False):
         '''
         Attempt to parse the string `date` using each format in turn, until
         success.  Once a parse succeeds, find the `dt.tzinfo` instance that is
         associated with the parse data (and/or supplied value, which must
-        be consistent if provided).  The date is then converted to UTC.
-        Finally, create a Date instance that combines the date, timezone and
-        format.
+        be consistent if provided).  Finally, return the datetime instance
+        and the formats (read and write) used.
 
         :param date: The date string to parse.
         :param tz: A time zone to use if none available in the date (`None` is
@@ -694,20 +693,18 @@ class SimpleDateParser(DebugLog):
                         choice of timezone.
         :param tz_factory: Converts from the timezone text, offset, etc, to a
                            `dt.tzinfo` instance.
-        :param format: `None`, or a format to store in the final Date (`None`
-                       will use the format that parsed the data).
         :param unsafe: Take the first timezone found.
         :param debug: If true, print a description of the logic followed.
-        :return: A SimpleDate instance, constructed from the given data.
+        :return: A datetime .
         '''
 
         log = self._get_log(debug)
 
-        for fmt in self._formats:
+        for read_fmt in self._formats:
             try:
 
-                tt, fraction, write_fmt = strptime(date, fmt)
-                log('Raw parse results for {0}: {1!r}, {2!r}', fmt, tt, fraction)
+                tt, fraction, write_fmt = strptime(date, read_fmt)
+                log('Raw parse results for {0}: {1!r}, {2!r}', read_fmt, tt, fraction)
                 datetime = dt.datetime(*(tt[:6] + (fraction,)))
 
                 zone = tt[-2]
@@ -727,11 +724,11 @@ class SimpleDateParser(DebugLog):
                 log('Resolved timezone as {0}', tzinfo)
 
                 datetime = tzinfo_localize(tzinfo, datetime, is_dst)
-                log('Parsed {0} with {1} to give {2} / {3}', date, fmt, datetime, tzinfo)
-                return SimpleDate(datetime=datetime, format=write_fmt if (format is None or fmt is format) else format, unsafe=unsafe, debug=debug)
+                log('Parsed {0} with {1} to give {2} / {3}', date, read_fmt, datetime, tzinfo)
+                return datetime, read_fmt, write_fmt
 
             except ValueError as e:
-                log('Failed to parse {0} with {1} ({2})', date, fmt, e)
+                log('Failed to parse {0} with {1} ({2})', date, read_fmt, e)
         raise SimpleDateError('Could not parse {0}', date)
 
 DEFAULT_DATE_PARSER = SimpleDateParser()
@@ -976,6 +973,7 @@ class SimpleDate(DateTimeWrapper, DebugLog):
         '''
 
         log = self._get_log(debug)
+        format = auto_invert(format, log)
 
         # gentle reader, this may look like a huge, impenetrable block of
         # code, but it's actually not doing anything clever - just many small
@@ -1023,8 +1021,19 @@ class SimpleDate(DateTimeWrapper, DebugLog):
                         date_parser = DEFAULT_DATE_PARSER
                 else:
                     log('Using given date parser')
-                simple = date_parser.parse(year_or_auto, tz=tz, is_dst=is_dst, country=country, format=single_format(format), tz_factory=tz_factory, unsafe=unsafe, debug=debug)
-                year_or_auto, format, tz = None, None, None  # clear tz so it's not re-checked later
+                datetime, read_fmt, write_fmt = date_parser.parse(year_or_auto, tz=tz, is_dst=is_dst, country=country, tz_factory=tz_factory, unsafe=unsafe, debug=debug)
+                year_or_auto, tz = None, None  # clear tz so it's not re-checked later
+                # if someone supplied a single format, always use it for writes.
+                # but check whether we have the correct translated version.
+                format = single_format(format)
+                if format is None:
+                    format = write_fmt
+                else:
+                    if format == read_fmt:
+                        format = write_fmt
+                    else:
+                        format = strip(format)
+                        log('Format was not used to parse, so strip to {0}', format)
             elif year_or_auto is not None:
                 raise SimpleDateError('Cannot convert {0!r} for year_or_auto', year_or_auto)
 
@@ -1236,11 +1245,3 @@ def best_guess_utc(date, debug=False):
         date = SimpleDate(date, date_parser=eu_date_parser, tz_factory=eu_tz_factory, unsafe=True, debug=debug)
     return date.utc.datetime
 
-
-# TODO
-# - change date parser to return date and original format, and use the format
-#   to check whether a format should be set
-# - add test of example with set format that is extended and needs to be
-#   stripped
-# - add automatic conversin of inverted format
-# - update docs and stackexchange answers
