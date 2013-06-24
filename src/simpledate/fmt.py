@@ -254,12 +254,15 @@ DEFAULT_TO_REGEX.update(HIDE_CHOICES)
 
 def auto_convert(key):
     symbol = key[0] + key[-1]
+    # if it's know to python, return it
     if symbol in PYTHON_TO_REGEX:
         return key, symbol
-    elif len(key) < 3:
-        return key, ''
-    else:
+    # if it's an extended match, return the unextended version
+    elif len(key) == 3 and key[0:2] == '%!':
         return key, key[-1]
+    # otherwise, remove it
+    else:
+        return key, ''
 
 DEFAULT_TO_WRITE = dict(map(auto_convert, FLEXIBLE_REGEX.keys()))
 DEFAULT_TO_WRITE.update(HIDE_CHOICES)
