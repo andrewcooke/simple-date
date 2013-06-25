@@ -803,14 +803,14 @@ SimpleDate('24/12/2013', tz='America/Santiago')
 The timezone you gave was not found in the PyTZ database.  This may be because
 it was given for a time that doesn't make sense (for example, using daylight
 savings in winter).  Using `debug=True` can
-[sometimes be useful](#debug---debug) in understanding what is going wrong.
+[sometimes be useful](#debugging---debug) in understanding what is going wrong.
 
 ### Why Did I Get the Error "AmbiguousTimezone: ..."?
 
 The timezone you gave could be matched against more that one timezone in
 PyTZ's database.  See [the need for search](#the-need-for-search).  Possible
 solutions include using the [unsafe](#first-found---unsafe) or
-[country](#country---country) parameters.
+[country](#country-code---country) parameters.
 
 ### Why Did I Get the Error "SingleInstantTzError ..."?
 
