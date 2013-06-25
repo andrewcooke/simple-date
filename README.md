@@ -785,6 +785,14 @@ By default neither American nor European formats are included (they conflict)
 so if you want to parse European style dates:
 
 ```python
+>>> SimpleDate('24/12/2013', format=DMY)
+SimpleDate('24/12/2013', tz='America/Santiago')
+```
+
+Or, more if you want to be more efficient with multiple dates (and more
+flexible - we're include ISO 8601 and RFC 2822 defaults too):
+
+```python
 >>> european = SimpleDateParser(DMY + DEFAULT_FORMATS)
 >>> SimpleDate('24/12/2013', date_parser=european)
 SimpleDate('24/12/2013', tz='America/Santiago')
