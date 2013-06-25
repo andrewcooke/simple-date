@@ -171,8 +171,8 @@ in the examples below, so the results show "now" when I was writing these docs):
     ```
 
 * an offset relative to UTC in minutes or as a timedelta instance (I'm
-  specifying the [format](#format) to switch from name to numerical offset,
-  as these tzinfo instances don't have a name);
+  specifying the [format](#format---format) to switch from name to numerical
+  offset, as these tzinfo instances don't have a name);
 
     ```python
     >>> SimpleDate(tz=120, format='%Y-%m-%d %z')
@@ -778,7 +778,7 @@ implementation uses the approach above via thread-local storage).
 ### Why Did I Get the Error "Could not parse ..."?
 
 SimpleDate does not know the format for the string you gave.  Specify the
-[format](#format) using `format=...` in the
+[format](#format---format) using `format=...` in the
 [SimpleDate constructor](#constructor).
 
 By default neither American nor European formats are included (they conflict)
