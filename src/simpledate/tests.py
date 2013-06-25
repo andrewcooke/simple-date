@@ -395,3 +395,7 @@ class StackOverflowTest(TestCase):
         assert now_utc.timestamp == 1357130096, now_utc.timestamp
         assert now_tz.timestamp == 1357130096, now_tz.timestamp
         assert begin_day.timestamp == 1357106400, begin_day.timestamp
+
+    def test_7562868(self):
+        date = SimpleDate('20111014T090000', tz='America/Los_Angeles')
+        assert date.timestamp == 1318608000.0, date.timestamp

@@ -1,5 +1,7 @@
 
 from functools import lru_cache
+from simpledate.utils import HashableDict
+
 try:
     from _thread import allocate_lock as _thread_allocate_lock
 except ImportError:
@@ -20,16 +22,14 @@ from re import sub, escape, compile, IGNORECASE
 
 # so the following are similar:
 #   ISO_8601 = add_timezone('%Y-%m-%d %H:%M:%S.%f', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d', '%Y')
-#   %Y%(-%m%(-%d%(%( %|T%)%H:%M%(:%S%(.%f%)%)%?%)%?%)%?%)%? %(%!Z%|%z%)
-
-# that's almost unreadable, so we also need some tools to generate that from
-# something more readable.  for example, auto-escaping from
-#   Y(-m(-d(( |T)H:M(:S(.f)?)?)?)?)? (!Z|z)
+#   %Y%(-%m%(-%d%(%( %|T%)%H:%M%(:%S%(.%f%)%?%)%?%)%?%)%?%)%? %(%!Z%|%z%)
+# and we also support, via `invert`, the easier-to-read:
+#   Y(-m(-d(( |%T)H:M(:S(.f)?)?)?)?)? (!Z|z)
 
 
 def tokenizer(fmt):
     '''
-    Split a format into a series of tokens adding parens for optional values.
+    Split a format into a series of tokens, adding parens for optional values.
 
     For example,
       '%(%H:%)%?%M %!Z%?'
@@ -47,13 +47,13 @@ def tokenizer(fmt):
         if fmt[i] == '%':
             j += 1
             if j > n:
-                raise ValueError('Missing token (nothing follows %)')
+                raise ValueError('Incomplete token - nothing follows %')
 
             # include a ! prefix
             if fmt[j-1] == '!':
                 j += 1
                 if j > n:
-                    raise ValueError('Missing token (nothing follows %!)')
+                    raise ValueError('Incomplete token - nothing follows %!')
 
         # if we have a trailing ? then enclose anything not in parens so
         # that we generate the regexp marker to test for inclusion
@@ -137,12 +137,12 @@ def _to_regexp(fmt, to_regex=None, to_write=None):
                 stack.append(count)
             elif token == '%)':
                 if not stack.pop():
-                    raise ValueError('Unbalanced %)')
+                    raise ValueError('Unmatched %)')
                 append(')', '')
     except StopIteration:
         pass
     if stack != [0]:
-        raise ValueError('Unbalanced %(')
+        raise ValueError('Unmatched %(')
 
     return regex, rebuild, compile(regex, IGNORECASE)
 
@@ -189,8 +189,9 @@ SYMBOL = r'[^\w]+'
 
 
 # these are the definitions used in the standard Python implementation
+# (use hashable dict for cache around _to_regex).
 
-BASE_TO_REGEX = {
+BASE_TO_REGEX = HashableDict({
     ' ': '\s+',
     '%a': seq_to_re(LOCALE_TIME.a_weekday, 'a'),
     '%A': seq_to_re(LOCALE_TIME.f_weekday, 'A'),
@@ -213,9 +214,9 @@ BASE_TO_REGEX = {
     '%z': r'(?P<z>[+-]\d\d[0-5]\d)',
     '%Z': r'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,})',
     '%%': '%',
-}
+})
 
-PYTHON_TO_REGEX= dict(BASE_TO_REGEX)
+PYTHON_TO_REGEX= HashableDict(BASE_TO_REGEX)
 PYTHON_TO_REGEX.update({
     '%c': _to_regexp(LOCALE_TIME.LC_date_time, BASE_TO_REGEX, {})[0],
     '%x': _to_regexp(LOCALE_TIME.LC_date, BASE_TO_REGEX, {})[0],
@@ -225,7 +226,7 @@ PYTHON_TO_REGEX.update({
 
 # extra definitions allowing more flexible matching.
 
-FLEXIBLE_REGEX = {
+FLEXIBLE_REGEX = HashableDict({
     '%! ': r'[^\w]+',
     '%!:': r'[^\w]+',
     '%!.': r'[^\w]+',
@@ -239,20 +240,25 @@ FLEXIBLE_REGEX = {
     '%!B': WORD('B'),
     '%!Z': r'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,})',
     '%?': '?',
-}
+})
 
-HIDE_CHOICES = {
+HIDE_CHOICES = HashableDict({
     '%(': '',
     '%|': '',
     '%)': '',
-}
+})
 
-DEFAULT_TO_REGEX = dict(PYTHON_TO_REGEX)
+DEFAULT_TO_REGEX = HashableDict(PYTHON_TO_REGEX)
 DEFAULT_TO_REGEX.update(FLEXIBLE_REGEX)
 DEFAULT_TO_REGEX.update(HIDE_CHOICES)
 
 
 def auto_convert(key):
+    '''
+    Infer transformations needed to generate a write template from an
+    extended read template by using the information in the transformations
+    needed to generate a regex from an extended read template.
+    '''
     symbol = key[0] + key[-1]
     # if it's know to python, return it
     if symbol in PYTHON_TO_REGEX:
@@ -469,7 +475,7 @@ def _strip(fmt, to_write=DEFAULT_TO_WRITE):
             choice.append(0)
         elif tok == '%|':
             if not choice:
-                raise ValueError('%| outside %(...%)')
+                raise ValueError('Unexpected %| - must be within %(...%)')
             choice[-1] += 1
         elif tok == '%)':
             try:
@@ -490,13 +496,18 @@ def strip(fmt):
     Remove extensions from  a format, taking the first choice and including
     optional parts.
     '''
-    if not '{' in fmt and not '!' in fmt:
+    if not '(' in fmt and not '!' in fmt:
         return fmt
     else:
         return ''.join(_strip(fmt))
 
 
 def _invert(fmt, to_regex=DEFAULT_TO_REGEX):
+    '''
+    In general, add % where it's missing, and remove it where it's present.
+    Actually, the implementation is a little smarter, only adding where it
+    makes sense.
+    '''
     i = 0
     n = len(fmt)
     while i < n:
@@ -536,6 +547,9 @@ def invert(fmt, to_regex=DEFAULT_TO_REGEX):
 
 
 def auto_invert(fmt, log=None):
+    '''
+    Apply `invert` automatically when needed.
+    '''
     if fmt is None or '%' in fmt:
         return fmt
     else:

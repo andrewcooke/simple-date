@@ -19,10 +19,10 @@ from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_
 
 # Build the various formats used by SimpleDateParser.
 
-RFC_2822 = EMAIL = (invert('(!a!, ?)d! ?b! ?Y! H:M(:S)?(! !Z|! ?z)?'),)
+RFC_2822 = EMAIL = ('(!a!, ?)d! ?b! ?Y! H:M(:S)?(! !Z|! ?z)?',)
 ISO_8601 = YMD = (invert('Y(!-?m(!-?d((! |%T)H!:?M(!:?S(.f)?)?)?)?)?(! !Z|! ?z)?'),)
-MDY = (invert('(m!/d!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?'),)
-DMY = (invert('(d!/m!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?'),)
+MDY = ('(m!/d!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?',)
+DMY = ('(d!/m!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?',)
 
 DEFAULT_FORMAT = '%Y-%m-%d %H:%M:%S.%f %Z'
 DEFAULT_FORMATS = ISO_8601 + RFC_2822
@@ -671,7 +671,7 @@ class SimpleDateParser(DebugLog):
     '''
 
     def __init__(self, formats=DEFAULT_FORMATS):
-        formats = always_tuple(formats)
+        formats = tuple(map(auto_invert, always_tuple(formats)))
         self._formats = MRUSortedIterable(formats)
 
     def parse(self, date,
