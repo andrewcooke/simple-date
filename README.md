@@ -781,10 +781,6 @@ SimpleDate does not know the format for the string you gave.  Specify the
 [format](#format) using `format=...` in the
 [SimpleDate constructor](#constructor).
 
-If you have multiple formats then you should create a new
-[SimpleDateParser](#simpledateparser) and provide it via
-[date_parser](#date-parser---date_parser).
-
 By default neither American nor European formats are included (they conflict)
 so if you want to parse European style dates:
 
