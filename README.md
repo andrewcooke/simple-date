@@ -790,7 +790,7 @@ SimpleDate('24/12/2013', tz='America/Santiago')
 ```
 
 Or, more if you want to be more efficient with multiple dates (and more
-flexible - we're include ISO 8601 and RFC 2822 defaults too):
+flexible - we're including ISO 8601 and RFC 2822 defaults too):
 
 ```python
 >>> european = SimpleDateParser(DMY + DEFAULT_FORMATS)
