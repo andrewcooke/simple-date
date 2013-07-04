@@ -460,8 +460,8 @@ and they are in that order at the start of the constructor, so you don't need
 to name them.  For example:
 
 ```python
->>> SimpleDate(2013, 6, 12, 0, 37, tz='EDT').local
-2013-06-12 00:37:00.000000 EDT
+>>> SimpleDate(2013, 6, 12, 0, 37, tz='EDT')
+SimpleDate('2013-06-12 00:37:00.000000 EDT')
 ```
 
 You must supply at least `year`, `month` and `day`.  Missing values (on the
