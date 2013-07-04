@@ -824,7 +824,7 @@ class DateTimeWrapper:
             return '{0}({1!r}, tz={2!r})'.format(self.__class__.__name__, str(self), str(self.__datetime.tzinfo))
 
     def strftime(self, format):
-        return self.__datetime.strftime(format)
+        return self.__datetime.strftime(auto_invert(format))
 
     def __eq__(self, other):
         return isinstance(other, DateTimeWrapper) and self.__datetime == other.datetime and self.__format == other.__format

@@ -571,10 +571,13 @@ So, for example, to change format:
 >>> default_fmt = SimpleDate(datetime(2013, 6, 17))
 >>> str(default_fmt)
 '2013-06-17 00:00:00.000000 CLT'
->>> short_fmt = default_fmt.convert(format='%Y-%m-%d')
+>>> short_fmt = default_fmt.convert(format='Y-m-d')
 >>> str(short_fmt)
 '2013-06-17'
 ```
+
+In the example above, we can use `Y-m-d` rather than `%Y-%m-%d` thanks to
+the [implicit inversion](#format---format) of formats.
 
 For conversion to other types, see [attributes](#attributes).
 
