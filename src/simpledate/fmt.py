@@ -546,10 +546,11 @@ def invert(fmt, to_regex=DEFAULT_TO_REGEX):
         return tuple(invert(f, to_regex) for f in fmt)
 
 
-def auto_invert(fmt, log=None):
+def _auto_invert(fmt, log=None):
     '''
     Apply `invert` automatically when needed.
     '''
+
     if fmt is None or '%' in fmt:
         return fmt
     else:
@@ -557,4 +558,14 @@ def auto_invert(fmt, log=None):
         if log:
             log('Inverted {0!r} to {1!r}', fmt, inverted)
         return inverted
+
+
+def auto_invert(fmt, log=None):
+    '''
+    Apply `invert` automatically when needed (handling tuples).
+    '''
+    if fmt is None or isinstance(fmt, str):
+        return _auto_invert(fmt, log)
+    else:
+        return tuple(map(lambda f: _auto_invert(f, log), fmt))
 

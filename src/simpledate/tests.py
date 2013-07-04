@@ -1,7 +1,7 @@
 
 from unittest import TestCase
 from pytz import timezone, utc
-from simpledate import SimpleDate, SimpleDateError, SimpleDateParser, DMY, MRUSortedIterable, DEFAULT_FORMAT, DEFAULT_DATE_PARSER, DEFAULT_TZ_FACTORY, take, NoTimezone, AmbiguousTimezone, SingleInstantTz, prefer, tzinfo_utcoffset, best_guess_utc, MDY, invert
+from simpledate import SimpleDate, SimpleDateError, SimpleDateParser, DMY, MRUSortedIterable, DEFAULT_FORMAT, DEFAULT_DATE_PARSER, DEFAULT_TZ_FACTORY, take, NoTimezone, AmbiguousTimezone, SingleInstantTz, prefer, tzinfo_utcoffset, best_guess_utc, MDY, invert, ISO_8601
 import datetime as dt
 import time as t
 
@@ -100,6 +100,9 @@ class ConstructorTest(TestCase):
     def test_formats(self):
         self.assert_constructor('23/06/2013 11:49', '23-6-2013 11:49', format=DMY)
         self.assert_constructor('06/23/2013 11:49', '6-23-2013 11:49', format=MDY)
+
+    def test_invert_bug(self):
+        self.assert_constructor('2013-07-04 18:53 CST', '2013-07-04 18:53 CST', country='CN', format=ISO_8601)
 
 
 class ParserTest(TestCase):
