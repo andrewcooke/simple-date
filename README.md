@@ -883,7 +883,7 @@ and that their current the date/time is `2013-06-01 12:00`, to infer that it
 should be written as `EDT`.
 
 But if someone writes `2013-06-01 12:00 EDT`, what is their geographical
-timezone?  And what format timezone would they use for `2013-01-01 12:00`,
+timezone?  And what timezone would they use for `2013-01-01 12:00`,
 in the middle of winter?  These kinds of questions are harder to answer with
 PyTZ.
 
