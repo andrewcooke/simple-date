@@ -944,7 +944,7 @@ This process can have problems:
 
 A SingleInstantTz is also returned on success when `unsafe=True` is used
 (which returns the [first timezone found](#first-found---unsafe)), because it
-is unclear whether the result is case 2 (or even 3, hence the name).
+is unclear whether the result is case 2 (or even 3, hence the name 'unsafe').
 
 ```python
 >>> SimpleDate('2013-06-17 America/New_York').tzinfo
