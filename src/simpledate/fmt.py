@@ -226,13 +226,13 @@ PYTHON_TO_REGEX.update({
 # extra definitions allowing more flexible matching.
 
 FLEXIBLE_REGEX = HashableDict({
-    '%! ': SYMBOL,
+    '%! ': SYMBOL,  # these match any symbol but will write as the name
     '%!:': SYMBOL,
     '%!.': SYMBOL,
     '%!,': SYMBOL,
     '%!-': SYMBOL,
     '%!/': SYMBOL,
-    '%!a': WORD('a'),
+    '%!a': WORD('a'),  # match any word, but write from local
     '%!A': WORD('A'),
     '%!b': WORD('b'),
     '%!B': WORD('B'),
