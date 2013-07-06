@@ -18,7 +18,6 @@ from re import sub, escape, compile, IGNORECASE
 # - more catholic matching with a leading %!
 # - nestable grouping and alternatives as %(A%|B%|C%)
 # - generation of the "equivalent format" for display after parsing
-# escaping is by prefixing with %.
 
 # so the following are similar:
 #   ISO_8601 = add_timezone('%Y-%m-%d %H:%M:%S.%f', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d', '%Y')
