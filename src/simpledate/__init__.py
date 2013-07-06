@@ -2,10 +2,10 @@
 from calendar import timegm
 import datetime as dt
 from itertools import islice
-from collections import MutableSet, OrderedDict
+from collections import OrderedDict
 from threading import local
 from tzlocal import get_localzone
-from pytz import timezone, country_timezones, all_timezones, FixedOffset, utc, NonExistentTimeError, common_timezones
+from pytz import timezone, country_timezones, all_timezones, FixedOffset, utc, NonExistentTimeError, common_timezones, UTC
 from simpledate.fmt import strptime, reconstruct, strip, invert, auto_invert
 from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_only, always_tuple
 
@@ -20,14 +20,24 @@ from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_
 # Build the various formats used by SimpleDateParser.
 
 RFC_2822 = EMAIL = ('(!a!, ?)d! ?b! ?Y! H:M(:S)?(! !Z|! ?z)?',)
-ISO_8601 = YMD = (invert('Y(!-?m(!-?d((! |%T)H!:?M(!:?S(.f)?)?)?)?)?(! !Z|! ?z)?'),)
+ISO_8601 = YMD = (invert('Y(!-?m(!-?d(( |%T)H!:?M(!:?S(.f)?)?)?)?)?(! !Z|! ?z)?'),)
 MDY = ('(m!/d!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?',)
 DMY = ('(d!/m!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?',)
-ASN1 = ('b! d(! H!:M(!:S)?)?! Y(! !Z|! ?z)?',)
+ASN1 = ('b! d(! !H!:!M(!:!S)?)?! Y(! ?!Z|! ?z)?', 'Ymd!H!M!S!Z', '!ymd!H!M!S!Z')
 
 DEFAULT_FORMAT = '%Y-%m-%d %H:%M:%S.%f %Z'
 DEFAULT_FORMATS = ISO_8601 + RFC_2822 + ASN1
 
+
+# ASN.1 alias for UTC
+
+class _Z(UTC.__class__):
+    def tzname(self, dt): return 'Z'
+    def __str__(self): return 'Z'
+    def __repr__(self): return 'Z'
+    def __repr__(self): return '<Z>'
+
+Z = _Z()
 
 
 # Various utilities to work around oddities (bugs?) in pytz and python versions.
@@ -396,7 +406,7 @@ class PyTzFactory(DebugLog):
         :return: A new instance of the factory.
         '''
         if timezones is None:
-            timezones = common_timezones
+            timezones = common_timezones + [Z]
         timezones = set.union(*[set(self.expand_tz(zone, debug=debug)) for zone in timezones])
         if countries:
             timezones = timezones.intersection(self.expand_country(*countries, debug=debug))

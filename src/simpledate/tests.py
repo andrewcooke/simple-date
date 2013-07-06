@@ -144,14 +144,19 @@ class ParserTest(TestCase):
         assert date.format == '%%%M!(|)', date.format
         assert str(date) == '%59!(|)', str(date)
 
-    # see RFC 5280 - problems are (1) 2 year -> 4 year conversion (2) Z as UTC
-    # def test_zulu(self):
-    #     date = SimpleDate('130706062100Z', format=invert('ymdHMSZ'), debug=True)
-    #     assert str(date) == '', str(date)
-
     def test_asn1(self):
+        date = SimpleDate('130706062100Z')
+        assert str(date) == '130706062100Z', str(date)
+        date = SimpleDate('20130706062100Z')
+        assert str(date) == '20130706062100Z', str(date)
+        year = SimpleDate('500101000000Z').year
+        assert year == 1950, year
+        year = SimpleDate('490101000000Z').year
+        assert year == 2049, year
         date = SimpleDate('May 25 23:59:59 2012 GMT')
         assert str(date) == 'May 25 23:59:59 2012 GMT', str(date)
+        with self.assertRaisesRegex(SimpleDateError, 'Could not parse'):
+            SimpleDate('50010100000Z')
 
 class TZFactoryTest(TestCase):
 

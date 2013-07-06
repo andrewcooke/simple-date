@@ -321,10 +321,15 @@ For parsing, it has been extended to:
 * Optional values with `%?`.  For example `'%H %?%M'` is hours and minutes
   with an optional space between.
 
-* Several of the directives can be modified to be more lenient by adding
-  a `!` after the `%`.  For example `'%!Z'` will match a wide variety of
+* Directives for symbols and text can be modified to be more *lenient* by
+  adding a `!` after the `%`.  For example `'%!Z'` will match a wide variety of
   timezone names (the default is to match only those know to the current
-  locale).
+  locale), and `'%!a'` will match any word (not just days of the week in the
+  current locale).
+
+* Directives for digits can be modified to be more *strict* by adding a `!`
+  after the `%`.  For example, `'%!d'` will only match two digits (while
+  `'%d'` will also match a single digit, possibly with a leading space).
 
 * Since the changes above result in an unreadable soup of `%` signs, the
   `invert(...)` function will add `%` to templates where missing, and remove

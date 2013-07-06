@@ -236,7 +236,13 @@ FLEXIBLE_REGEX = HashableDict({
     '%!A': WORD('A'),
     '%!b': WORD('b'),
     '%!B': WORD('B'),
-    '%!Z': r'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,})',
+    '%!d': r'(?P<d>3[0-1]|[1-2]\d|0[1-9])',  # 2 digits only
+    '%!H': r'(?P<H>2[0-3]|[0-1]\d)',         # 2 digits only
+    '%!m': r'(?P<m>1[0-2]|0[1-9])',          # 2 digits only
+    '%!M': r'(?P<M>[0-5]\d)',                # 2 digits only
+    '%!S': r'(?P<S>6[0-1]|[0-5]\d)',         # 2 digits only
+    '%!y': r'(?P<y50>\d\d)',                 # switch at 1950
+    '%!Z': r'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,}|Z)',
     '%?': '?',
 })
 
@@ -284,8 +290,9 @@ def to_regexp(fmt, substitutions=None):
 
 
 # the main logic to construct a date/time from the matched data, lifted
-# verbatim from the python source.  the only change is to check that
-# a group has actually matched (since now some may be optional).
+# verbatim from the python source.  the only changes are to check that
+# a group has actually matched (since now some may be optional) and the
+# modified handling for y50.
 
 def to_time_tuple(found_dict):
     '''Closely based on _strptime in standard Python.'''
@@ -311,6 +318,13 @@ def to_time_tuple(found_dict):
             #value in the range of [00, 68] is in the century 2000, while
             #[69,99] is in the century 1900
             if year <= 68:
+                year += 2000
+            else:
+                year += 1900
+        elif group_key == 'y50':
+            year = int(found_dict['y50'])
+            # ASN.1 / RFC 3852
+            if year < 50:
                 year += 2000
             else:
                 year += 1900
