@@ -149,14 +149,14 @@ class ParserTest(TestCase):
         assert str(date) == '130706062100Z', str(date)
         date = SimpleDate('20130706062100Z')
         assert str(date) == '20130706062100Z', str(date)
-        year = SimpleDate('500101000000Z').year
+        year = SimpleDate('501111111111Z').year
         assert year == 1950, year
         year = SimpleDate('490101000000Z').year
         assert year == 2049, year
         date = SimpleDate('May 25 23:59:59 2012 GMT')
         assert str(date) == 'May 25 23:59:59 2012 GMT', str(date)
         with self.assertRaisesRegex(SimpleDateError, 'Could not parse'):
-            SimpleDate('50010100000Z')
+            SimpleDate('50111111111Z')  # one digit shorter than above
 
 class TZFactoryTest(TestCase):
 
