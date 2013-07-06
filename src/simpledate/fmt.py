@@ -226,12 +226,12 @@ PYTHON_TO_REGEX.update({
 # extra definitions allowing more flexible matching.
 
 FLEXIBLE_REGEX = HashableDict({
-    '%! ': r'[^\w]+',
-    '%!:': r'[^\w]+',
-    '%!.': r'[^\w]+',
-    '%!,': r'[^\w]+',
-    '%!-': r'[^\w]+',
-    '%!/': r'[^\w]+',
+    '%! ': SYMBOL,
+    '%!:': SYMBOL,
+    '%!.': SYMBOL,
+    '%!,': SYMBOL,
+    '%!-': SYMBOL,
+    '%!/': SYMBOL,
     '%!!': '!',
     '%!a': WORD('a'),
     '%!A': WORD('A'),
