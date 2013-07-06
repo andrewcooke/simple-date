@@ -19,7 +19,7 @@ from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_
 
 # Build the various formats used by SimpleDateParser.
 
-RFC_2822 = EMAIL = ('(!a!, ?)d! ?b! ?Y! H:M(:S)?(! !Z|! ?z)?',)
+RFC_2822 = EMAIL = ('(!a!, ?)d! ?b! ?Y! H!:M(!:S)?(! !Z|! ?z)?',)
 ISO_8601 = YMD = (invert('Y(!-?m(!-?d(( |%T)H!:?M(!:?S(.f)?)?)?)?)?(! !Z|! ?z)?'),)
 MDY = ('(m!/d!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?',)
 DMY = ('(d!/m!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?',)
