@@ -232,7 +232,6 @@ FLEXIBLE_REGEX = HashableDict({
     '%!,': SYMBOL,
     '%!-': SYMBOL,
     '%!/': SYMBOL,
-    '%!!': '!',
     '%!a': WORD('a'),
     '%!A': WORD('A'),
     '%!b': WORD('b'),
