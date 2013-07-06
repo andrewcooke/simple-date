@@ -630,11 +630,11 @@ The constructor takes a list of formats, which will be tried until one works
 (the order is not guaranteed - more successful formats are tried first).
 
 Predefined lists include `RFC_2822` (aliased as `EMAIL`), `ISO_8601`
-(aliased as `YMD`), `ASN1`, `MDY` and `DMY`.
+(aliased as `YMD`), `ASN_1`, `MDY` and `DMY`.
 
 `MDY` and `DMY` are mutually exclusive - only use one at a time.
 
-The default is `DEFAULT_FORMATS = ISO_8601 + RFC_2822 + ASN1`
+The default is `DEFAULT_FORMATS = ISO_8601 + RFC_2822 + ASN_1`
 
 Note that SimpleDateParser is not a *validating* parser.  By design, these
 formats will match *many* dates that are inconsistent with the associated
