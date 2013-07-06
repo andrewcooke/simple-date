@@ -331,10 +331,10 @@ For parsing, it has been extended to:
   after the `%`.  For example, `'%!d'` will only match two digits (while
   `'%d'` will also match a single digit, possibly with a leading space).
 
-* Since the changes above result in an unreadable soup of `%` signs, the
-  `invert(...)` function will add `%` to templates where missing, and remove
-  where present.  Sounds crazy, but simplifies things hugely.  Here's an
-  ISO8601-like format with a letter "T" in the middle and optional seconds:
+* Since the changes above result in an unreadable soup of `%` and `!` signs,
+  the `invert(...)` function will add `%` to templates where missing, and
+  remove where present.  Sounds crazy, but simplifies things hugely.  Here's
+  an ISO8601-like format with a letter "T" in the middle and optional seconds:
 
   ```python
   >>> SimpleDate('2013-06-24T17:47', format=invert('Y-m-d%TH:M(:S)?'), tz=utc)
