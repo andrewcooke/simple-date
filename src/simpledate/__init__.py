@@ -19,11 +19,11 @@ from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_
 
 # Build the various formats used by SimpleDateParser.
 
-RFC_2822 = EMAIL = ('(!a!, ?)d! ?b! ?Y! H!:M(!:S)?(! !Z|! ?z)?',)
-ISO_8601 = YMD = (invert('Y(!-?m(!-?d(( |%T)H!:?M(!:?S(.f)?)?)?)?)?(! !Z|! ?z)?'),)
-MDY = ('(m!/d!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?',)
-DMY = ('(d!/m!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?z)?',)
-ASN_1 = ('b! d(! !H!:!M(!:!S)?)?! Y(! ?!Z|! ?z)?', 'Y!m!d!H!M!S!Z', '!y!m!d!H!M!S!Z')
+RFC_2822 = EMAIL = ('(!a!, ?)d! ?b! ?Y! H!:M(!:S)?(! !Z|! ?!z)?',)
+ISO_8601 = YMD = (invert('Y(!-?m(!-?d(( |%T)H!:?M(!:?S(.f)?)?)?)?)?(! ?(!Z|!z))?'),)
+MDY = ('(m!/d!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?!z)?',)
+DMY = ('(d!/m!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?!z)?',)
+ASN_1 = ('b! d(! !H!:!M(!:!S)?)?! Y(! ?!Z|! ?!z)?', 'Y!m!d!H!M!S(!Z|!z)', '!y!m!d!H!M!S(!Z|!z)')
 
 DEFAULT_FORMAT = '%Y-%m-%d %H:%M:%S.%f %Z'
 DEFAULT_FORMATS = ISO_8601 + RFC_2822 + ASN_1

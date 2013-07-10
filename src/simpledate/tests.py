@@ -158,6 +158,12 @@ class ParserTest(TestCase):
         with self.assertRaisesRegex(SimpleDateError, 'Could not parse'):
             SimpleDate('50111111111Z')  # one digit shorter than above
 
+    def test_rfc3339(self):
+        # http://www.lshift.net/blog/2010/05/20/rfc3339-simple-canonical-date-parsing-and-formatting-for-python
+        midnightUTC = SimpleDate("2008-08-24T00:00:00Z").normalized
+        oneamBST = SimpleDate("2008-08-24T01:00:00+01:00", debug=True).normalized
+        assert oneamBST == midnightUTC
+
 class TZFactoryTest(TestCase):
 
     def test_country(self):

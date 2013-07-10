@@ -184,7 +184,7 @@ def seq_to_re(to_convert, directive):
 
 WEEK_NUMBER = lambda x: r'(?P<%s>5[0-3]|[0-4]\d|\d)' % x
 WORD = lambda x: r'(?P<%s>(?:\w(?<=[^\d_]))+)' % x
-SYMBOL = r'[^\w]+'
+SYMBOL = r'\W+'
 
 
 # these are the definitions used in the standard Python implementation
@@ -242,6 +242,7 @@ FLEXIBLE_REGEX = HashableDict({
     '%!M': r'(?P<M>[0-5]\d)',                # 2 digits only
     '%!S': r'(?P<S>6[0-1]|[0-5]\d)',         # 2 digits only
     '%!y': r'(?P<y50>\d\d)',                 # switch at 1950
+    '%!z': r'(?P<z>[+-]\d\d\W?[0-5]\d)',      # character between h + m
     '%!Z': r'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,}|Z)',
     '%?': '?',
 })
@@ -291,8 +292,8 @@ def to_regexp(fmt, substitutions=None):
 
 # the main logic to construct a date/time from the matched data, lifted
 # verbatim from the python source.  the only changes are to check that
-# a group has actually matched (since now some may be optional) and the
-# modified handling for y50.
+# a group has actually matched (since now some may be optional), the
+# modified handling for y50, and uzing -ve indices for z minutes.
 
 def to_time_tuple(found_dict):
     '''Closely based on _strptime in standard Python.'''
@@ -387,7 +388,7 @@ def to_time_tuple(found_dict):
                 week_of_year_start = 0
         elif group_key == 'z':
             z = found_dict['z']
-            tzoffset = int(z[1:3]) * 60 + int(z[3:5])
+            tzoffset = int(z[1:3]) * 60 + int(z[-2:])
             if z.startswith("-"):
                 tzoffset = -tzoffset
         elif group_key == 'Z':
