@@ -171,8 +171,8 @@ in the examples below, so the results show "now" when I was writing these docs):
     ```
 
 * an offset relative to UTC in minutes or as a timedelta instance (I'm
-  specifying the [format](#format---format) to switch from name to numerical
-  offset, as these tzinfo instances don't have a name);
+  specifying the [format](#format---format) to switch from name, `%Z`, to
+  numerical offset, `%z`, as these tzinfo instances don't have a name);
 
     ```python
     >>> SimpleDate(tz=120, format='%Y-%m-%d %z')
@@ -244,7 +244,7 @@ Australia:
 
 ```python
 >>> SimpleDate('2013-01-01', tz='EST')
-AmbiguousTimezone: 3 distinct timezones found: <'EST'>; <'Australia/Sydney'>.
+AmbiguousTimezone: 3 distinct timezones found: <'EST'>; <'Australia/Melbourne'>; ...
 ```
 
 We can remove this ambiguity by specifying the country code `'US'`:
@@ -263,13 +263,14 @@ arguments.
 ### TZ Factory - tz_factory
 
 Provide a [PyTzFactory](#pytzfactory) that is used to find the timezone.
-By default all calls to the API used `DEAULTT_TZ_FACTORY`.
+Otherwise, by default, all calls to the API use the `DEFAULT_TZ_FACTORY`
+instance.
 
 This is useful in two cases:
 
 1. With multiple threads.  The code is *not* thread safe, so if you are
-   creating [SimpleDate] instances in multiple threads then each thread *must*
-   have its own factory.
+   creating [SimpleDate](#simpledate) instances in multiple threads then each
+   thread *must* have its own factory.
 
    ```python
    >>> local_factory = PyTzFactory()
@@ -365,10 +366,10 @@ data to select a format for printing.  So if `'%(%H:%)?%M'` matched both
 hours and minutes then the format would be `'%H:%M'`, but if it matched only
 minutes then the format for printing would be `'%M'`.
 
-Whether a format is supplied or not, the formats in [SimpleDateParser] (by
-default, `DEFAULT_DATE_PARSER`) can also be used to parse the string, if
-necessary.  And if no format is supplied then the format in the parser that
-succeeds is used for formatting output too.
+Whether a format is supplied or not, the formats in the relevant
+[SimpleDateParser](#simpledateparser) (by default, `DEFAULT_DATE_PARSER`) can
+also be used to parse the string, if necessary.  And if no format is supplied
+then the format in the parser that succeeds is used for formatting output too.
 
 Multiple formats can be given as a tuple.  If more than one format is given
 then the format that successfully parses the value will be used for display
@@ -667,8 +668,8 @@ Sometimes this is easy: if it's given a tzinfo instance and no other
 constraints it simply returns the value.  But in general it requires a
 [search](#the-need-for-search) through all the available timezones.
 
-As with [SimpleDateParser], this is called from the SimpleDate
-[constructor](#constructor) via `DEFAULT_TZ_FACTORY` (or given by
+As with [SimpleDateParser](#simpledateparser), this is called from the
+SimpleDate [constructor](#constructor) via `DEFAULT_TZ_FACTORY` (or given by
 `tz_factory=...`).
 
 #### Constructor
