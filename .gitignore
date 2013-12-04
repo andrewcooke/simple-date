@@ -38,3 +38,4 @@ nosetests.xml
 *.iml
 *.pyc
 .idea
+MANIFEST
