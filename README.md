@@ -14,7 +14,7 @@ Examples
 Just give me a UTC datetime for these dates!
 
 ```python
->>> for date in '1/6/2013 BST', '1/6/2013 EST', 'Tue, 18 Jun 2013 12:19:09 -0400':
+>>> for date in '1/6/2013 BST', '1/6/2013 EST', 'Tue, 18 Jun 2013 12alwa:19:09 -0400':
 >>>     print(best_guess_utc(date))
 2013-05-31 23:00:00+00:00
 2013-01-06 05:00:00+00:00
@@ -373,8 +373,8 @@ then the format in the parser that succeeds is used for formatting output too.
 
 Multiple formats can be given as a tuple.  If more than one format is given
 then the format that successfully parses the value will be used for display
-(unlike the single value case, which is always used, even if another format
-from `date_parser` is used).
+(unlike the single value case, which is always used for display, even if 
+another format from `date_parser` is used for parsing).
 
    ```python
    >>> SimpleDate('6/12/2013', format=DMY + YMD)
