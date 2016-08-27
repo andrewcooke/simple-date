@@ -63,7 +63,8 @@ And as a naive datetime?
 datetime.datetime(2013, 12, 24, 0, 0)
 ```
 
-What's the time in EST for epoch 1234567890?
+What's the time in EST for epoch 1234567890 (Note: Recent changes to pytz
+have renamed the Australian EST to AEST so this example no longer works)?
 
 ```python
 >>> SimpleDate(1234567890, tz='EST')
@@ -972,3 +973,13 @@ pattern when processing dates: [parse and convert to UTC](#best-guess-utc).
 This approach is recommended because it restricts all the complications with
 timezone handling to one place in the program - handling input.  The rest of
 the code can process UTC values with no concerns about further errors.
+
+Note: Recent changes to pytz (or the underlying timezone database) have renamed
+the "Australian EST" to AEST, so the example above no longer works.
+
+
+Releases
+--------
+
+0.5.0 2016-08-27 Special case UTC to avoid single time zone exception; remove
+recursive call in single time zone error message.

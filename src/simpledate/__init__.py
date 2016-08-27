@@ -298,9 +298,11 @@ class SingleInstantTzError(SimpleDateError):
         '''
         :param tzinfo: The offset and name.
         :param datetime: The time at which the timezone is defined.
-        :param other: The time at which the timezone was used.
+        :param other: The time at which the timezone was used.  No longer
+               used in message, as string conversion can itself cause an error,
+               giving infinite recursion.
         '''
-        super().__init__('Attempted to use {0} (defined only for {1}) on {2}', tzinfo, datetime, other)
+        super().__init__('Attempted to use {0}, defined only for {1}', tzinfo, datetime)
 
 
 
@@ -509,7 +511,11 @@ class PyTzFactory(DebugLog):
                 if len(distinct) == 1:
                     found = next(iter(distinct))
                     log('Found {0}', found)
-                    return SingleInstantTz(found, datetime, is_dst)
+                    # special case UTC here, because it's not a temporal timezone
+                    if found is UTC:
+                        return found
+                    else:
+                        return SingleInstantTz(found, datetime, is_dst)
                 else:
                     raise AmbiguousTimezone(distinct, timezones, datetime, is_dst, country, unsafe)
 
