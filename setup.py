@@ -112,7 +112,7 @@ And what day is that?
 Licence
 -------
 
-(c) 2013 Andrew Cooke, andrew@acooke.org; released into the public domain
+(c) 2013,2015 Andrew Cooke, andrew@acooke.org; released into the public domain
 for any use, but with absolutely no warranty.
     '''
 )

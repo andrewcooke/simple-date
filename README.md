@@ -981,5 +981,5 @@ the "Australian EST" to AEST, so the example above no longer works.
 Releases
 --------
 
-0.5.0 2016-08-27 Special case UTC to avoid single time zone exception; remove
-recursive call in single time zone error message.
+0.5.0 2016-08-31 Special case UTC to avoid single time zone exception; remove
+recursive call in single time zone error message; clean format when necessary.
