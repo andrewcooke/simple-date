@@ -62,22 +62,16 @@ class ConstructorTest(TestCase):
             SimpleDate(2013, month, 1, tz=('CLT', 'CLST'), unsafe=True)
 
     def test_ambiguous_tz(self):
-        # these no longer work as the australian zone was renamed to AEST
-        return
-        SimpleDate('2013-01-01 EST', unsafe=True, debug=True)
-        with self.assertRaisesRegex(AmbiguousTimezone, '3 distinct'):
-            SimpleDate('2013-01-01 EST')
-        SimpleDate('2013-01-01 EST', country='US', debug=True)
-        with self.assertRaisesRegex(AmbiguousTimezone, '3 distinct'):
-            SimpleDate('2013-01-01 EST', country=('US', 'AU'),)
-        date = SimpleDate('2013-01-01 EST', country=('US', 'AU'), unsafe=True, debug=True)
-        assert date.tzinfo.utcoffset(date.datetime) == dt.timedelta(-1, 68400), repr(date.tzinfo.utcoffset(date.datetime))
-        date = SimpleDate('2013-01-01 EST', country=('AU', 'US'), unsafe=True, debug=True)
+        SimpleDate('2016-08-28 BST', unsafe=True, debug=True)
+        with self.assertRaisesRegex(AmbiguousTimezone, '2 distinct'):
+            SimpleDate('2016-08-28 BST')
+        SimpleDate('2016-08-28 BST', country='GB', debug=True)
+        with self.assertRaisesRegex(AmbiguousTimezone, '2 distinct'):
+            SimpleDate('2016-08-28 BST', country=('GB', 'PG'),)
+        date = SimpleDate('2016-08-28 BST', country=('GB', 'PG'), unsafe=True, debug=True)
+        assert date.tzinfo.utcoffset(date.datetime) == dt.timedelta(0, 3600), repr(date.tzinfo.utcoffset(date.datetime))
+        date = SimpleDate('2016-08-28 BST', country=('PG', 'GB'), unsafe=True, debug=True)
         assert date.tzinfo.utcoffset(date.datetime) != dt.timedelta(-1, 68400), repr(date.tzinfo.utcoffset(date.datetime))
-        with self.assertRaisesRegex(AmbiguousTimezone, '3 distinct'):
-            SimpleDate('2013-01-01 EST', country=prefer('US'),)
-        date = SimpleDate('2013-01-01 EST', country=prefer('US'), unsafe=True, debug=True)
-        assert date.tzinfo.utcoffset(date.datetime) == dt.timedelta(-1, 68400), repr(date.tzinfo.utcoffset(date.datetime))
 
 
     def test_ny_bug(self):
@@ -111,6 +105,13 @@ class ConstructorTest(TestCase):
         str(SimpleDate('2016-06-01 00:00:00UTC') + dt.timedelta(days=10))
         with self.assertRaisesRegex(SingleInstantTzError, 'defined only'):
             str(SimpleDate('2016-06-01 00:00:00CLT') + dt.timedelta(days=10))
+
+    def test_utc_bug(self):
+        assert str(SimpleDate('2016-06-01 00:00:00', tz='UTC') + dt.timedelta(days=10)) == '2016-06-11 00:00:00'
+        assert str( SimpleDate('2016-06-01 00:00:00UTC') + dt.timedelta(days=10)) == '2016-06-11 00:00:00UTC'
+
+    def test_format_bug(self):
+        assert str(SimpleDate(1472338800, tz='BST', country='GB', format=MDY)) == '08/28/2016 00:00:00.000000 BST'
 
 
 class ParserTest(TestCase):

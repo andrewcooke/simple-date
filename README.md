@@ -63,19 +63,19 @@ And as a naive datetime?
 datetime.datetime(2013, 12, 24, 0, 0)
 ```
 
-What's the time in EST for epoch 1234567890 (Note: Recent changes to pytz
-have renamed the Australian EST to AEST so this example no longer works)?
+What's the time in BST (British Summer Time)for epoch 1472338800?
 
 ```python
->>> SimpleDate(1234567890, tz='EST')
-AmbiguousTimezone: 3 distinct timezones found: <'EST'>; <'Australia/NSW'>; ...
-```
+>>> SimpleDate(1472338800, tz='BST')
+AmbiguousTimezone: 2 distinct timezones found: <... 'Europe/London' ...>;
+<... 'Pacific/Bougainville' ...>..
 
-Whoa!  What are those crazy Australians doing?  Let's force the USA (only):
+Huh.  So Papua New Guinea uses the same abbreviation.  That's unfortunate.
+But we can specify the country:
 
 ```python
->>> SimpleDate(1234567890, tz='EST', country='US', format=MDY)
-SimpleDate('02/13/2009 18:31:30.000000 EST')
+>>> SimpleDate(1472338800, tz='BST', country='GB', format=DMY)
+
 ```
 
 Alternatively, we could give priority to the USA and take the first solution

@@ -506,10 +506,12 @@ def _strip(fmt, to_write=DEFAULT_TO_WRITE):
 
 def strip(fmt):
     '''
-    Remove extensions from  a format, taking the first choice and including
+    Remove extensions from a format, taking the first choice and including
     optional parts.
     '''
-    if not '(' in fmt and not '!' in fmt:
+    if fmt is None:
+        return fmt
+    elif not '(' in fmt and not '!' in fmt:
         return fmt
     else:
         return ''.join(_strip(fmt))

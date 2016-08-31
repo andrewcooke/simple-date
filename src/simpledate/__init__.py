@@ -1191,7 +1191,7 @@ class SimpleDate(DateTimeWrapper, DebugLog):
             tzinfo = tz_factory.search(tz, datetime=datetime, is_dst=is_dst, country=country, unsafe=unsafe, debug=debug)
             datetime = tzinfo_localize(tzinfo, datetime, is_dst)
 
-        format = single_format(format)
+        format = strip(auto_invert(single_format(format)))
         if not format:
             log('Using default format ({0})', DEFAULT_FORMAT)
             format = DEFAULT_FORMAT

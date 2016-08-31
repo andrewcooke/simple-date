@@ -38,16 +38,9 @@ class ParserTest(TestCase):
         result, _, _ = _to_regexp(expr, subs)
         assert target == result, result
 
-    def test_regexp(self):
-        self.assert_regexp('abc', 'abc', {})
-        self.assert_regexp('abXc', 'ab%xc', {'%x': 'X'})
-        self.assert_regexp('ab((?P<G1>)X)c', 'ab{%x}c', {'%x': 'X'})
-        self.assert_regexp('a((?P<G1>)b)?c', 'ab?c', {})
-        self.assert_regexp('((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)', '{%H:!}%M', DEFAULT_SUBSTITUTIONS)
-
     def test_subs(self):
         self.assert_regexp(r'(?P<Y>\d\d\d\d)-(?P<m>1[0-2]|0[1-9]|[1-9])-(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])', '%Y-%m-%d', None)
-        self.assert_regexp(r'((?P<G1>)(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9]))?', '%d?', None)
+        self.assert_regexp(r'((?P<G1>)(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9]))?', '%(%d%)%?', None)
 
     def assert_parser(self, target_regexp, target_rebuild, expr, subs):
         regexp, rebuild, _ = _to_regexp(expr, subs)
@@ -61,7 +54,7 @@ class ParserTest(TestCase):
         self.assert_parser('ab((?P<G1>)xy|(?P<G2>)z)c', {'G0': 'ab%G1%%G2%c', 'G1': 'xy', 'G2': 'z'}, 'ab%(xy%|z%)c', HIDE_CHOICES)
         self.assert_parser('ab((?P<G1>)c)?', {'G0': 'ab%G1%', 'G1': 'c'}, 'abc%?', DEFAULT_TO_REGEX)
         self.assert_parser('ab((?P<G1>)((?P<G2>)c)?|(?P<G3>)de((?P<G4>)(?P<H>2[0-3]|[0-1]\d|\d))?)', {'G0': 'ab%G1%%G3%', 'G1': '%G2%', 'G2': 'c', 'G3': 'de%G4%', 'G4': '%H'}, 'ab%(c%?%|de%H%?%)', DEFAULT_TO_REGEX)
-        self.assert_parser('((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)', {'G1': '%H:', 'G0': '%G1%%M'}, '%(%H%!:%)%M', DEFAULT_TO_REGEX)
+        self.assert_parser('((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)\W+)(?P<M>[0-5]\d|\d)', {'G1': '%H:', 'G0': '%G1%%M'}, '%(%H%!:%)%M', DEFAULT_TO_REGEX)
 
     def assert_reconstruct(self, target, expr, text):
         pattern, rebuild, regexp = _to_regexp(expr)
@@ -70,19 +63,19 @@ class ParserTest(TestCase):
         assert result == target, result
 
     def test_reconstruct(self):
-        self.assert_reconstruct('ab', 'a{b|c}d?', 'ab')
-        self.assert_reconstruct('ac', 'a{b|c}d?', 'ac')
-        self.assert_reconstruct('abd', 'a{b|c}d?', 'abd')
-        self.assert_reconstruct('%S', '{{%H:}?%M:}?%S', '56')
-        self.assert_reconstruct('ab', 'a ?b', 'ab')
-        self.assert_reconstruct('a b', 'a ?b', 'a b')
-        self.assert_reconstruct('%%%M!{|}', '%%%M%!%{%|%}', '%59!{|}')
+        self.assert_reconstruct('ab', 'a%(b%|c%)d%?', 'ab')
+        self.assert_reconstruct('ac', 'a%(b%|c%)d%?', 'ac')
+        self.assert_reconstruct('abd', 'a%(b%|c%)d%?', 'abd')
+        self.assert_reconstruct('%S', '%(%(%H:%)%?%M:%)%?%S', '56')
+        self.assert_reconstruct('ab', 'a %?b', 'ab')
+        self.assert_reconstruct('a b', 'a %?b', 'a b')
+        self.assert_reconstruct('%%%M!{|}', '%%%M!{|}', '%59!{|}')
 
 
 class StripTest(TestCase):
 
     def test_strip(self):
-        s = strip(DMY[0])
+        s = strip(invert(DMY[0]))
         assert s == '%d/%m/%Y %H:%M:%S.%f %Z', s
         s = strip('%! %! %?')
         assert s == '  '
